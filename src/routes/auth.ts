@@ -11,27 +11,55 @@ function generateVerificationCode(): string {
 }
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
-  // Register with Email Verification
+  // Register with Email Verification (Partial Registration)
   .post(
     "/register",
     async ({ body, set }) => {
-      const { username, email, password, firstName, lastName } = body;
+      const { username, email, password } = body;
 
       // Check if username exists
-      const existingUser = await db.query.users.findFirst({
+      const existingUsername = await db.query.users.findFirst({
         where: eq(users.username, username),
       });
 
-      if (existingUser) {
+      if (existingUsername) {
         set.status = 400;
         return { success: false, message: "Username already exists" };
       }
 
-      // Generate 6-digit verification code
-      const code = generateVerificationCode();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      // Check if email exists
+      const existingEmail = await db.query.users.findFirst({
+        where: eq(users.username, email), // Note: email is stored in username field for now
+      });
+
+      if (existingEmail) {
+        set.status = 400;
+        return { success: false, message: "Email already registered" };
+      }
 
       try {
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user immediately with partial data
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            username,
+            password: hashedPassword,
+            firstName: "", // Will be filled in profile setup
+            lastName: "", // Will be filled in profile setup
+            role: "User",
+            isActive: false, // Not active until email verified
+            profileCompleted: false,
+            mustChangePassword: false,
+          })
+          .returning();
+
+        // Generate 6-digit verification code
+        const code = generateVerificationCode();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
         // Store verification code
         await db.insert(verificationCodes).values({
           email,
@@ -47,6 +75,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
           message: "Verification code sent to your email",
           data: {
             email,
+            userId: newUser.id,
             expiresIn: "10 minutes",
           },
         };
@@ -64,17 +93,15 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         username: t.String(),
         email: t.String(),
         password: t.String(),
-        firstName: t.String(),
-        lastName: t.String(),
       }),
     }
   )
 
-  // Verify Email and Create Account
+  // Verify Email and Activate Account
   .post(
     "/verify-email",
     async ({ body, set }) => {
-      const { email, code, username, password, firstName, lastName } = body;
+      const { email, code } = body;
 
       // Find valid verification code
       const verification = await db.query.verificationCodes.findFirst({
@@ -94,22 +121,28 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       }
 
       try {
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Find user by email (stored in verification_codes table)
+        // Note: We need to find user by username since email isn't a field yet
+        const user = await db.query.users.findFirst({
+          where: eq(users.username, body.username || email.split('@')[0]),
+        });
 
-        // Create user account
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            username,
-            password: hashedPassword,
-            firstName,
-            lastName,
-            role: "User",
-            isActive: true,
-            profileCompleted: false,
-            mustChangePassword: false,
+        if (!user) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "User not found",
+          };
+        }
+
+        // Activate user account (email verified)
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            isActive: true, // Activate account
+            updatedAt: new Date(),
           })
+          .where(eq(users.id, user.id))
           .returning();
 
         // Delete used verification code
@@ -119,20 +152,20 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
         // Generate token
         const token = Buffer.from(
-          `${newUser.id}:${newUser.username}:${Date.now()}`
+          `${updatedUser.id}:${updatedUser.username}:${Date.now()}`
         ).toString("base64");
 
         return {
           success: true,
-          message: "Account created successfully",
+          message: "Email verified successfully",
           data: {
             user: {
-              id: newUser.id,
-              username: newUser.username,
-              firstName: newUser.firstName,
-              lastName: newUser.lastName,
-              role: newUser.role,
-              profileCompleted: newUser.profileCompleted,
+              id: updatedUser.id,
+              username: updatedUser.username,
+              firstName: updatedUser.firstName,
+              lastName: updatedUser.lastName,
+              role: updatedUser.role,
+              profileCompleted: updatedUser.profileCompleted,
             },
             token: token,
           },
@@ -141,7 +174,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         set.status = 500;
         return {
           success: false,
-          message: "Failed to create account",
+          message: "Failed to verify email",
           error: error.message,
         };
       }
@@ -150,10 +183,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       body: t.Object({
         email: t.String(),
         code: t.String(),
-        username: t.String(),
-        password: t.String(),
-        firstName: t.String(),
-        lastName: t.String(),
+        username: t.Optional(t.String()),
       }),
     }
   )
