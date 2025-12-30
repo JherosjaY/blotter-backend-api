@@ -7,9 +7,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Storage bucket names (like Cloudinary folders)
 export const STORAGE_BUCKETS = {
-  EVIDENCE: 'evidence-files',
-  PROFILES: 'profile-images',
-  AUDIO: 'audio-recordings',
+  EVIDENCE: 'evidence-files',      // For evidence photos/videos
+  PROFILES: 'profile-images',      // For user profile pictures
 } as const;
 
 /**

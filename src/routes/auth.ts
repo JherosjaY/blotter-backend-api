@@ -1,10 +1,211 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import { users } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { users, verificationCodes } from "../db/schema";
+import { eq, and, gt } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import { sendVerificationEmail } from "../lib/sendgrid";
+
+// Helper function to generate 6-digit code
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
+  // Register with Email Verification
+  .post(
+    "/register",
+    async ({ body, set }) => {
+      const { username, email, password, firstName, lastName } = body;
+
+      // Check if username exists
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.username, username),
+      });
+
+      if (existingUser) {
+        set.status = 400;
+        return { success: false, message: "Username already exists" };
+      }
+
+      // Generate 6-digit verification code
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      try {
+        // Store verification code
+        await db.insert(verificationCodes).values({
+          email,
+          code,
+          expiresAt,
+        });
+
+        // Send verification email
+        await sendVerificationEmail(email, code, username);
+
+        return {
+          success: true,
+          message: "Verification code sent to your email",
+          data: {
+            email,
+            expiresIn: "10 minutes",
+          },
+        };
+      } catch (error: any) {
+        set.status = 500;
+        return {
+          success: false,
+          message: "Failed to send verification email",
+          error: error.message,
+        };
+      }
+    },
+    {
+      body: t.Object({
+        username: t.String(),
+        email: t.String(),
+        password: t.String(),
+        firstName: t.String(),
+        lastName: t.String(),
+      }),
+    }
+  )
+
+  // Verify Email and Create Account
+  .post(
+    "/verify-email",
+    async ({ body, set }) => {
+      const { email, code, username, password, firstName, lastName } = body;
+
+      // Find valid verification code
+      const verification = await db.query.verificationCodes.findFirst({
+        where: and(
+          eq(verificationCodes.email, email),
+          eq(verificationCodes.code, code),
+          gt(verificationCodes.expiresAt, new Date())
+        ),
+      });
+
+      if (!verification) {
+        set.status = 400;
+        return {
+          success: false,
+          message: "Invalid or expired verification code",
+        };
+      }
+
+      try {
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user account
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            username,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            role: "User",
+            isActive: true,
+            profileCompleted: false,
+            mustChangePassword: false,
+          })
+          .returning();
+
+        // Delete used verification code
+        await db
+          .delete(verificationCodes)
+          .where(eq(verificationCodes.id, verification.id));
+
+        // Generate token
+        const token = Buffer.from(
+          `${newUser.id}:${newUser.username}:${Date.now()}`
+        ).toString("base64");
+
+        return {
+          success: true,
+          message: "Account created successfully",
+          data: {
+            user: {
+              id: newUser.id,
+              username: newUser.username,
+              firstName: newUser.firstName,
+              lastName: newUser.lastName,
+              role: newUser.role,
+              profileCompleted: newUser.profileCompleted,
+            },
+            token: token,
+          },
+        };
+      } catch (error: any) {
+        set.status = 500;
+        return {
+          success: false,
+          message: "Failed to create account",
+          error: error.message,
+        };
+      }
+    },
+    {
+      body: t.Object({
+        email: t.String(),
+        code: t.String(),
+        username: t.String(),
+        password: t.String(),
+        firstName: t.String(),
+        lastName: t.String(),
+      }),
+    }
+  )
+
+  // Resend Verification Code
+  .post(
+    "/resend-code",
+    async ({ body, set }) => {
+      const { email } = body;
+
+      // Generate new code
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      try {
+        // Delete old codes for this email
+        await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+
+        // Store new verification code
+        await db.insert(verificationCodes).values({
+          email,
+          code,
+          expiresAt,
+        });
+
+        // Send verification email
+        await sendVerificationEmail(email, code);
+
+        return {
+          success: true,
+          message: "New verification code sent to your email",
+          data: {
+            email,
+            expiresIn: "10 minutes",
+          },
+        };
+      } catch (error: any) {
+        set.status = 500;
+        return {
+          success: false,
+          message: "Failed to resend verification code",
+          error: error.message,
+        };
+      }
+    },
+    {
+      body: t.Object({
+        email: t.String(),
+      }),
+    }
+  )
+
   // Login
   .post(
     "/login",
@@ -20,26 +221,9 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         return { success: false, message: "Invalid credentials" };
       }
 
-      // Verify password (support both bcrypt and plain text for migration)
-      let passwordMatch = false;
-      
-      // Check if password is hashed (bcrypt hashes start with $2b$)
-      if (user.password.startsWith('$2b$') || user.password.startsWith('$2a$')) {
-        // Bcrypt hashed password
-        passwordMatch = await bcrypt.compare(password, user.password);
-      } else {
-        // Plain text password (old users)
-        passwordMatch = user.password === password;
-        
-        // If login successful, upgrade to bcrypt
-        if (passwordMatch) {
-          const hashedPassword = await bcrypt.hash(password, 10);
-          await db.update(users)
-            .set({ password: hashedPassword })
-            .where(eq(users.id, user.id));
-        }
-      }
-      
+      // Verify password
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
       if (!passwordMatch) {
         set.status = 401;
         return { success: false, message: "Invalid credentials" };
@@ -50,8 +234,10 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         return { success: false, message: "Account is inactive" };
       }
 
-      // Generate simple token (in production, use JWT)
-      const token = Buffer.from(`${user.id}:${user.username}:${Date.now()}`).toString('base64');
+      // Generate token
+      const token = Buffer.from(
+        `${user.id}:${user.username}:${Date.now()}`
+      ).toString("base64");
 
       return {
         success: true,
@@ -74,121 +260,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       body: t.Object({
         username: t.String(),
         password: t.String(),
-      }),
-    }
-  )
-
-  // Register (Public - User role only, but accepts role parameter for admin/officer creation)
-  .post(
-    "/register",
-    async ({ body, set }) => {
-      const { username, password, firstName, lastName, role } = body;
-
-      // Check if username exists
-      const existingUser = await db.query.users.findFirst({
-        where: eq(users.username, username),
-      });
-
-      if (existingUser) {
-        set.status = 400;
-        return { success: false, message: "Username already exists" };
-      }
-
-      // Hash password with bcrypt
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      // Use provided role or default to "User" for public registration
-      const userRole = role || "User";
-      
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          username,
-          password: hashedPassword,
-          firstName,
-          lastName,
-          role: userRole,
-          isActive: true,
-          profileCompleted: false,
-          mustChangePassword: false,
-        })
-        .returning();
-
-      // Generate token
-      const token = Buffer.from(`${newUser.id}:${newUser.username}:${Date.now()}`).toString('base64');
-
-      return {
-        success: true,
-        message: "Registration successful",
-        data: {
-          user: {
-            id: newUser.id,
-            username: newUser.username,
-            firstName: newUser.firstName,
-            lastName: newUser.lastName,
-            role: newUser.role,
-            profileCompleted: newUser.profileCompleted,
-          },
-          token: token,
-        },
-      };
-    },
-    {
-      body: t.Object({
-        username: t.String(),
-        password: t.String(),
-        firstName: t.String(),
-        lastName: t.String(),
-        role: t.Optional(t.String()),
-      }),
-    }
-  )
-  
-  // Update User Profile (Profile Photo & Completion)
-  .put(
-    "/profile/:userId",
-    async ({ params, body, set }) => {
-      try {
-        const userId = parseInt(params.userId);
-        const { profilePhotoUri, profileCompleted } = body;
-
-        // Update user profile
-        const [updatedUser] = await db
-          .update(users)
-          .set({
-            profilePhotoUri: profilePhotoUri,
-            profileCompleted: profileCompleted ?? true,
-            updatedAt: new Date(),
-          })
-          .where(eq(users.id, userId))
-          .returning();
-
-        if (!updatedUser) {
-          set.status = 404;
-          return {
-            success: false,
-            message: "User not found",
-          };
-        }
-
-        return {
-          success: true,
-          message: "Profile updated successfully",
-          user: updatedUser,
-        };
-      } catch (error: any) {
-        set.status = 500;
-        return {
-          success: false,
-          message: "Failed to update profile",
-          error: error.message,
-        };
-      }
-    },
-    {
-      body: t.Object({
-        profilePhotoUri: t.String(),
-        profileCompleted: t.Optional(t.Boolean()),
       }),
     }
   );
