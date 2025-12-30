@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Firebase
+firebase-service-account.json
+config/firebase-service-account.json
+config/*.json
+
+# Build
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+drizzle/
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

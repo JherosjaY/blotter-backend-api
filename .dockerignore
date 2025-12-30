@@ -1,0 +1,15 @@
+node_modules
+.git
+.env
+.env.local
+*.log
+.DS_Store
+drizzle
+test-api.ps1
+setup.ps1
+docker-compose*.yml
+README.md
+docs
+*.md
+.gitignore
+bun.lock

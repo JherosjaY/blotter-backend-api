@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: blotter-postgres
+    environment:
+      POSTGRES_USER: blotter_user
+      POSTGRES_PASSWORD: blotter_pass
+      POSTGRES_DB: blotter_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blotter_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: blotter-api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://blotter_user:blotter_pass@postgres:5432/blotter_db
+      PORT: 3000
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
