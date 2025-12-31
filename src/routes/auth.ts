@@ -120,10 +120,9 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       }
 
       try {
-        // Find user by email (stored in verification_codes table)
-        // Note: We need to find user by username since email isn't a field yet
+        // ✅ Find user by email (now that email field exists in users table)
         const user = await db.query.users.findFirst({
-          where: eq(users.username, body.username || email.split('@')[0]),
+          where: eq(users.email, email),
         });
 
         if (!user) {
