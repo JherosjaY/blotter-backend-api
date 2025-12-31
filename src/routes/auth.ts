@@ -244,8 +244,15 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       }
 
       try {
+        // Get username from database for personalized email
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, email),
+        });
+
+        const username = user?.username;
+
         // Send verification email with the code (existing or new)
-        await sendVerificationEmail(email, codeToSend);
+        await sendVerificationEmail(email, codeToSend, username);
 
         return {
           success: true,
