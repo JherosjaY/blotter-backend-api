@@ -169,7 +169,6 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             email: users.email,
             firstName: users.firstName,
             lastName: users.lastName,
-            role: users.role,
             profilePhotoUri: users.profilePhotoUri,
           });
 
