@@ -194,23 +194,42 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     async ({ body, set }) => {
       const { email } = body;
 
-      // Generate new code
-      const code = generateVerificationCode();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      // ✅ Check if there's already a valid verification code
+      const existingCode = await db.query.verificationCodes.findFirst({
+        where: and(
+          eq(verificationCodes.email, email),
+          gt(verificationCodes.expiresAt, new Date())
+        ),
+      });
 
-      try {
-        // Delete old codes for this email
-        await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+      let codeToSend: string;
 
-        // Store new verification code
-        await db.insert(verificationCodes).values({
-          email,
-          code,
-          expiresAt,
-        });
+      if (existingCode) {
+        // ✅ Reuse existing valid code
+        codeToSend = existingCode.code;
+        console.log(`♻️ Reusing existing code for ${email}`);
+      } else {
+        // ❌ No valid code exists, create new one
+        const code = generateVerificationCode();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        // Send verification email
-        await sendVerificationEmail(email, code);
+        try {
+          // Delete old codes for this email
+          await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+
+          // Store new verification code
+          await db.insert(verificationCodes).values({
+            email,
+            code,
+            expiresAt,
+          });
+
+          codeToSend = code;
+          console.log(`🆕 Created new code for ${email}`);
+        }
+
+      // Send verification email with the code (existing or new)
+      await sendVerificationEmail(email, codeToSend);
 
         return {
           success: true,
