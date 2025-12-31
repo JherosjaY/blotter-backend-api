@@ -281,4 +281,64 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         password: t.String(),
       }),
     }
+  )
+
+  // Complete Profile (Step 3: Add firstName, lastName, profile photo)
+  .post(
+    "/complete-profile",
+    async ({ body, set }) => {
+      const { userId, firstName, lastName, profilePhotoUri } = body;
+
+      try {
+        // Find user by ID
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+
+        if (!user) {
+          set.status = 404;
+          return { success: false, message: "User not found" };
+        }
+
+        // Update user profile
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            firstName: firstName,
+            lastName: lastName,
+            profilePhotoUri: profilePhotoUri || null,
+            profileCompleted: true,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId))
+          .returning();
+
+        return {
+          success: true,
+          message: "Profile completed successfully",
+          data: {
+            user: {
+              id: updatedUser.id,
+              username: updatedUser.username,
+              firstName: updatedUser.firstName,
+              lastName: updatedUser.lastName,
+              profilePhotoUri: updatedUser.profilePhotoUri,
+              profileCompleted: updatedUser.profileCompleted,
+            },
+          },
+        };
+      } catch (error) {
+        console.error("Complete profile error:", error);
+        set.status = 500;
+        return { success: false, message: "Failed to complete profile" };
+      }
+    },
+    {
+      body: t.Object({
+        userId: t.Number(),
+        firstName: t.String(),
+        lastName: t.String(),
+        profilePhotoUri: t.Optional(t.String()),
+      }),
+    }
   );

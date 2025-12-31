@@ -21,6 +21,7 @@ import { resolutionsRoutes } from "./routes/resolutions";
 import { activityLogsRoutes } from "./routes/activityLogs";
 import { notificationsRoutes } from "./routes/notifications";
 import { respondentsRoutes } from "./routes/respondents";
+import { uploadRoutes } from "./routes/upload";
 
 export const app = new Elysia()
   .use(
@@ -85,6 +86,7 @@ export const app = new Elysia()
       .use(activityLogsRoutes)
       .use(notificationsRoutes)
       .use(respondentsRoutes)
+      .use(uploadRoutes)
   )
   .listen(process.env.PORT || 3000);
 
