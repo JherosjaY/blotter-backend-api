@@ -1,20 +1,16 @@
 import { pgTable, serial, varchar, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 
-// Users Table
+// Users Table (Simplified for regular users only)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  firstName: varchar("first_name", { length: 100 }).notNull(),
-  lastName: varchar("last_name", { length: 100 }).notNull(),
   username: varchar("username", { length: 50 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
-  role: varchar("role", { length: 20 }).notNull(), // Admin, Officer, User
-  badgeNumber: varchar("badge_number", { length: 50 }),
+  firstName: varchar("first_name", { length: 100 }).notNull().default(""),
+  lastName: varchar("last_name", { length: 100 }).notNull().default(""),
   profilePhotoUri: text("profile_photo_uri"),
-  isActive: boolean("is_active").default(true),
+  isActive: boolean("is_active").default(false),
   profileCompleted: boolean("profile_completed").default(false),
-  mustChangePassword: boolean("must_change_password").default(false),
   fcmToken: text("fcm_token"), // Firebase Cloud Messaging token
-  deviceId: varchar("device_id", { length: 255 }), // Device identifier
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

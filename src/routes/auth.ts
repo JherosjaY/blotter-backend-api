@@ -49,10 +49,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
             password: hashedPassword,
             firstName: "", // Will be filled in profile setup
             lastName: "", // Will be filled in profile setup
-            role: "User",
             isActive: false, // Not active until email verified
             profileCompleted: false,
-            mustChangePassword: false,
           })
           .returning();
 
@@ -164,7 +162,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
               username: updatedUser.username,
               firstName: updatedUser.firstName,
               lastName: updatedUser.lastName,
-              role: updatedUser.role,
               profileCompleted: updatedUser.profileCompleted,
             },
             token: token,
@@ -278,7 +275,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName,
-            role: user.role,
             profilePhotoUri: user.profilePhotoUri,
             profileCompleted: user.profileCompleted,
           },
