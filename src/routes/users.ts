@@ -140,4 +140,130 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
         deviceId: t.Optional(t.String()),
       }),
     }
+  )
+
+  // Update user profile (first name, last name)
+  .patch(
+    "/:id/profile",
+    async ({ params, body, set }) => {
+      try {
+        const userId = parseInt(params.id);
+        const { firstName, lastName } = body;
+
+        console.log(`📝 Updating profile for user ${userId}`);
+        console.log(`  First Name: ${firstName}`);
+        console.log(`  Last Name: ${lastName}`);
+
+        // Update user in database
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            firstName,
+            lastName,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId))
+          .returning({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            role: users.role,
+            profilePhotoUri: users.profilePhotoUri,
+          });
+
+        if (!updatedUser) {
+          set.status = 404;
+          return { success: false, message: "User not found" };
+        }
+
+        console.log(`✅ Profile updated successfully`);
+
+        return {
+          success: true,
+          message: "Profile updated successfully",
+          data: updatedUser,
+        };
+      } catch (error) {
+        console.error("❌ Error updating profile:", error);
+        set.status = 500;
+        return {
+          success: false,
+          message: "Failed to update profile",
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    },
+    {
+      body: t.Object({
+        firstName: t.String(),
+        lastName: t.String(),
+      }),
+    }
+  )
+
+  // Change user password
+  .patch(
+    "/:id/password",
+    async ({ params, body, set }) => {
+      try {
+        const userId = parseInt(params.id);
+        const { currentPassword, newPassword } = body;
+
+        console.log(`🔐 Changing password for user ${userId}`);
+
+        // Get user with password
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+
+        if (!user) {
+          set.status = 404;
+          return { success: false, message: "User not found" };
+        }
+
+        // Verify current password
+        const bcrypt = require("bcrypt");
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+        if (!isPasswordValid) {
+          set.status = 401;
+          return { success: false, message: "Current password is incorrect" };
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password in database
+        await db
+          .update(users)
+          .set({
+            password: hashedPassword,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId));
+
+        console.log(`✅ Password changed successfully`);
+
+        return {
+          success: true,
+          message: "Password changed successfully",
+        };
+      } catch (error) {
+        console.error("❌ Error changing password:", error);
+        set.status = 500;
+        return {
+          success: false,
+          message: "Failed to change password",
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    },
+    {
+      body: t.Object({
+        currentPassword: t.String(),
+        newPassword: t.String(),
+      }),
+    }
   );
