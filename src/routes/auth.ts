@@ -27,9 +27,9 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         return { success: false, message: "Username already exists" };
       }
 
-      // ✅ Check if email already exists (prevent spam/duplicate emails)
-      const existingEmail = await db.query.verificationCodes.findFirst({
-        where: eq(verificationCodes.email, email),
+      // ✅ Check if email already exists in users table
+      const existingEmail = await db.query.users.findFirst({
+        where: eq(users.email, email),
       });
 
       if (existingEmail) {
@@ -46,6 +46,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
           .insert(users)
           .values({
             username,
+            email, // ✅ Store email in users table
             password: hashedPassword,
             firstName: "", // Will be filled in profile setup
             lastName: "", // Will be filled in profile setup
