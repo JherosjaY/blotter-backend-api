@@ -393,7 +393,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         profilePhotoUri: t.Optional(t.String()),
       }),
     }
-  );
+  )
   // Forgot Password - Send Reset Code
   .post(
     "/forgot-password",
