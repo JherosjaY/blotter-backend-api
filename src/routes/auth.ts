@@ -128,20 +128,25 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       }
 
       try {
+        console.log(`🔍 Looking for user with email: ${email}`);
         // ✅ Find user by email (now that email field exists in users table)
         const user = await db.query.users.findFirst({
           where: eq(users.email, email),
         });
 
         if (!user) {
+          console.log(`❌ User not found for email: ${email}`);
           set.status = 404;
           return {
             success: false,
             message: "User not found",
           };
         }
+        console.log(`✅ Found user: ${user.username} (ID: ${user.id})`);
+
 
         // Activate user account (email verified)
+        console.log(`🔄 Activating user account...`);
         const [updatedUser] = await db
           .update(users)
           .set({
@@ -150,12 +155,17 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
           })
           .where(eq(users.id, user.id))
           .returning();
+        console.log(`✅ User activated successfully`);
+
 
         // ✅ Mark code as verified instead of deleting it
+        console.log(`🔄 Marking code as verified...`);
         await db
           .update(verificationCodes)
           .set({ verifiedAt: new Date() })
           .where(eq(verificationCodes.id, verification.id));
+        console.log(`✅ Code marked as verified`);
+
 
         // Generate token
         const token = Buffer.from(
