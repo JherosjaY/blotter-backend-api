@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { cloudinary } from "../lib/cloudinary";
 
-export const uploadRoutes = new Elysia({ prefix: "/api/upload" })
+export const uploadRoutes = new Elysia({ prefix: "/upload" })
 
     // Upload profile photo to Cloudinary
     .post(
