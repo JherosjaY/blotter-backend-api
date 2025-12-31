@@ -58,15 +58,15 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         const code = generateVerificationCode();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        // Store verification code (but don't send email yet - user will click Send button)
+        // Store verification code
         await db.insert(verificationCodes).values({
           email,
           code,
           expiresAt,
         });
 
-        // ✅ DON'T send email here - user will click "Send" button in EmailVerificationActivity
-        // Email will be sent via /resend-code endpoint when user clicks Send
+        // ✅ Send verification email immediately during registration
+        await sendVerificationEmail(email, code, username);
 
         return {
           success: true,
