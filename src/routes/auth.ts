@@ -3,7 +3,7 @@ import { db } from "../db";
 import { users, verificationCodes } from "../db/schema";
 import { eq, and, gt, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
-import { sendVerificationEmail } from "../lib/sendgrid";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/sendgrid";
 
 // Helper function to generate 6-digit code
 function generateVerificationCode(): string {
@@ -391,6 +391,175 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         firstName: t.String(),
         lastName: t.String(),
         profilePhotoUri: t.Optional(t.String()),
+      }),
+    }
+  );
+  // Forgot Password - Send Reset Code
+  .post(
+    "/forgot-password",
+    async ({ body, set }) => {
+      const { email } = body;
+
+      try {
+        // Check if user exists
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, email),
+        });
+
+        if (!user) {
+          set.status = 404;
+          return { success: false, message: "No account found with this email" };
+        }
+
+        // Generate reset code
+        const code = generateVerificationCode();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        // Delete old reset codes for this email
+        await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+
+        // Store new reset code
+        await db.insert(verificationCodes).values({
+          email,
+          code,
+          expiresAt,
+        });
+
+        // Send reset email
+        await sendPasswordResetEmail(email, code, user.username);
+
+        console.log(`?? Password reset code sent to {email}`);
+
+        return {
+          success: true,
+          message: "Reset code sent to your email",
+          data: {
+            email,
+            expiresIn: "10 minutes",
+          },
+        };
+      } catch (error) {
+        console.error("? Error sending reset code:", error);
+        set.status = 500;
+        return { success: false, message: "Failed to send reset code" };
+      }
+    },
+    {
+      body: t.Object({
+        email: t.String(),
+      }),
+    }
+  )
+
+  // Verify Reset Code
+  .post(
+    "/verify-reset-code",
+    async ({ body, set }) => {
+      const { email, code } = body;
+
+      try {
+        // Find valid reset code
+        const resetCode = await db.query.verificationCodes.findFirst({
+          where: and(
+            eq(verificationCodes.email, email),
+            eq(verificationCodes.code, code),
+            gt(verificationCodes.expiresAt, new Date()),
+            isNull(verificationCodes.verifiedAt)
+          ),
+        });
+
+        if (!resetCode) {
+          set.status = 400;
+          return { success: false, message: "Invalid or expired reset code" };
+        }
+
+        console.log(`? Reset code verified for {email}`);
+
+        return {
+          success: true,
+          message: "Reset code verified",
+        };
+      } catch (error) {
+        console.error("? Error verifying reset code:", error);
+        set.status = 500;
+        return { success: false, message: "Failed to verify reset code" };
+      }
+    },
+    {
+      body: t.Object({
+        email: t.String(),
+        code: t.String(),
+      }),
+    }
+  )
+
+  // Reset Password
+  .post(
+    "/reset-password",
+    async ({ body, set }) => {
+      const { email, code, newPassword } = body;
+
+      try {
+        // Verify reset code
+        const resetCode = await db.query.verificationCodes.findFirst({
+          where: and(
+            eq(verificationCodes.email, email),
+            eq(verificationCodes.code, code),
+            gt(verificationCodes.expiresAt, new Date()),
+            isNull(verificationCodes.verifiedAt)
+          ),
+        });
+
+        if (!resetCode) {
+          set.status = 400;
+          return { success: false, message: "Invalid or expired reset code" };
+        }
+
+        // Get user
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, email),
+        });
+
+        if (!user) {
+          set.status = 404;
+          return { success: false, message: "User not found" };
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password
+        await db
+          .update(users)
+          .set({
+            password: hashedPassword,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, user.id));
+
+        // Mark code as used
+        await db
+          .update(verificationCodes)
+          .set({ verifiedAt: new Date() })
+          .where(eq(verificationCodes.id, resetCode.id));
+
+        console.log(`? Password reset successfully for {email}`);
+
+        return {
+          success: true,
+          message: "Password reset successfully",
+        };
+      } catch (error) {
+        console.error("? Error resetting password:", error);
+        set.status = 500;
+        return { success: false, message: "Failed to reset password" };
+      }
+    },
+    {
+      body: t.Object({
+        email: t.String(),
+        code: t.String(),
+        newPassword: t.String(),
       }),
     }
   );
