@@ -7,4 +7,5 @@ export const verificationCodes = pgTable("verification_codes", {
     code: varchar("code", { length: 6 }).notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
+    verifiedAt: timestamp("verified_at"), // ✅ Track when code was successfully used
 });

@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { users, verificationCodes } from "../db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { sendVerificationEmail } from "../lib/sendgrid";
 
@@ -105,12 +105,13 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     async ({ body, set }) => {
       const { email, code } = body;
 
-      // Find valid verification code
+      // Find valid verification code (not expired and not already used)
       const verification = await db.query.verificationCodes.findFirst({
         where: and(
           eq(verificationCodes.email, email),
           eq(verificationCodes.code, code),
-          gt(verificationCodes.expiresAt, new Date())
+          gt(verificationCodes.expiresAt, new Date()),
+          isNull(verificationCodes.verifiedAt) // ✅ Code must not be already verified
         ),
       });
 
@@ -146,9 +147,10 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
           .where(eq(users.id, user.id))
           .returning();
 
-        // Delete used verification code
+        // ✅ Mark code as verified instead of deleting it
         await db
-          .delete(verificationCodes)
+          .update(verificationCodes)
+          .set({ verifiedAt: new Date() })
           .where(eq(verificationCodes.id, verification.id));
 
         // Generate token
