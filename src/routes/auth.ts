@@ -27,8 +27,15 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         return { success: false, message: "Username already exists" };
       }
 
-      // Note: Email is not stored in users table, only in verification_codes
-      // Users can have same email for different usernames (edge case)
+      // ✅ Check if email already exists (prevent spam/duplicate emails)
+      const existingEmail = await db.query.verificationCodes.findFirst({
+        where: eq(verificationCodes.email, email),
+      });
+
+      if (existingEmail) {
+        set.status = 400;
+        return { success: false, message: "This email is already registered. Please sign in." };
+      }
 
       try {
         // Hash password
