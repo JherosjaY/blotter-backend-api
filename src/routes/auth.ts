@@ -215,27 +215,27 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         const code = generateVerificationCode();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        try {
-          // Delete old codes for this email
-          await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+        // Delete old codes for this email
+        await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
 
-          // Store new verification code
-          await db.insert(verificationCodes).values({
-            email,
-            code,
-            expiresAt,
-          });
+        // Store new verification code
+        await db.insert(verificationCodes).values({
+          email,
+          code,
+          expiresAt,
+        });
 
-          codeToSend = code;
-          console.log(`🆕 Created new code for ${email}`);
-        }
+        codeToSend = code;
+        console.log(`🆕 Created new code for ${email}`);
+      }
 
-      // Send verification email with the code (existing or new)
-      await sendVerificationEmail(email, codeToSend);
+      try {
+        // Send verification email with the code (existing or new)
+        await sendVerificationEmail(email, codeToSend);
 
         return {
           success: true,
-          message: "New verification code sent to your email",
+          message: "Verification code sent to your email",
           data: {
             email,
             expiresIn: "10 minutes",
@@ -245,7 +245,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         set.status = 500;
         return {
           success: false,
-          message: "Failed to resend verification code",
+          message: "Failed to send verification email",
           error: error.message,
         };
       }
