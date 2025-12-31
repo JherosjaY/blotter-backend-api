@@ -59,6 +59,9 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         const code = generateVerificationCode();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+        // ✅ Delete any existing verification codes for this email first
+        await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+
         // Store verification code
         await db.insert(verificationCodes).values({
           email,
