@@ -69,8 +69,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
           expiresAt,
         });
 
-        // ✅ Send verification email immediately during registration
-        await sendVerificationEmail(email, code, username);
+        // ❌ REMOVED: Don't send email automatically - user must click "Send" button
+        // await sendVerificationEmail(email, code, username);
 
         return {
           success: true,
