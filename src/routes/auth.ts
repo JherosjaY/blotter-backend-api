@@ -104,6 +104,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     "/verify-email",
     async ({ body, set }) => {
       const { email, code } = body;
+      console.log(`🔍 Verify-email request: email=${email}, code=${code}`);
 
       // Find valid verification code (not expired)
       const verification = await db.query.verificationCodes.findFirst({
@@ -115,7 +116,10 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         ),
       });
 
+      console.log(`🔍 Verification lookup result:`, verification ? `Found code ${verification.code}, expires at ${verification.expiresAt}` : 'NOT FOUND');
+
       if (!verification) {
+        console.log(`❌ Verification failed: code not found or expired`);
         set.status = 400;
         return {
           success: false,
