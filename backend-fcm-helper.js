@@ -26,8 +26,17 @@ let isInitialized = false;
 export function initializeFCM() {
   if (!isInitialized) {
     try {
-      // Try to use environment variables first (for production)
-      if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      // Option 1: Try FIREBASE_SERVICE_ACCOUNT (JSON string from Render)
+      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount)
+        });
+        console.log('✅ Firebase Admin SDK initialized (from FIREBASE_SERVICE_ACCOUNT)');
+        isInitialized = true;
+      }
+      // Option 2: Try individual environment variables
+      else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
         admin.initializeApp({
           credential: admin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
@@ -86,7 +95,7 @@ async function sendToToken(fcmToken, notification) {
         }
       }
     };
-    
+
     const response = await admin.messaging().send(message);
     console.log('✅ Notification sent:', response);
     return { success: true, response };
@@ -104,17 +113,17 @@ export async function sendNotificationToUser(db, userId, notification) {
   try {
     // Get user's FCM token from database
     const user = await db.users.findOne({ id: userId });
-    
+
     if (!user) {
       console.log(`⚠️ User ${userId} not found`);
       return { success: false, error: 'User not found' };
     }
-    
+
     if (!user.fcmToken) {
       console.log(`⚠️ No FCM token for user ${userId}`);
       return { success: false, error: 'No FCM token' };
     }
-    
+
     return await sendToToken(user.fcmToken, notification);
   } catch (error) {
     console.error('❌ Error sending notification to user:', error);
@@ -129,10 +138,10 @@ export async function sendNotificationToUsers(db, userIds, notification) {
   const results = await Promise.all(
     userIds.map(userId => sendNotificationToUser(db, userId, notification))
   );
-  
+
   const successCount = results.filter(r => r.success).length;
   console.log(`✅ Sent to ${successCount}/${userIds.length} users`);
-  
+
   return { successCount, total: userIds.length, results };
 }
 
@@ -156,7 +165,7 @@ export async function sendNotificationToTopic(topic, notification) {
         }
       }
     };
-    
+
     const response = await admin.messaging().send(message);
     console.log(`✅ Notification sent to topic ${topic}:`, response);
     return { success: true, response };
@@ -351,7 +360,7 @@ export async function notifyUserStatusUpdate(db, userId, caseNumber, oldStatus, 
     'Closed': '🔒',
     'Dismissed': '❌'
   };
-  
+
   return await sendNotificationToUser(db, userId, {
     title: `${statusEmoji[newStatus] || '📢'} Status Update`,
     body: `Case #${caseNumber} is now ${newStatus}`,
@@ -542,17 +551,17 @@ export async function notifyAllUsersAppUpdate(version, features) {
 
 export default {
   initializeFCM,
-  
+
   // Core functions
   sendNotificationToUser,
   sendNotificationToUsers,
   sendNotificationToTopic,
-  
+
   // Admin notifications
   notifyAdminsNewCase,
   notifyAdminsUrgentCase,
   notifyAdminCaseClosureRequest,
-  
+
   // Officer notifications
   notifyOfficerCaseAssigned,
   notifyOfficerCaseReassigned,
@@ -560,7 +569,7 @@ export default {
   notifyOfficerHearingReminder,
   notifyOfficerNewEvidence,
   notifyOfficerNewWitness,
-  
+
   // User notifications
   notifyUserCaseFiled,
   notifyUserStatusUpdate,
@@ -572,7 +581,7 @@ export default {
   notifyUserCaseClosed,
   notifyUserSummonsIssued,
   notifyRespondentComplaintFiled,
-  
+
   // Bulk notifications
   notifyAllUsersSystemMaintenance,
   notifyAllUsersAppUpdate
