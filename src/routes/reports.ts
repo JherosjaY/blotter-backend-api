@@ -71,7 +71,7 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
         incidentDate: t.String(),
         incidentTime: t.String(),
         incidentLocation: t.String(),
-        narrative: t.String(),
+        statement: t.String(), // Changed from 'narrative'
         complainantName: t.Optional(t.String()),
         complainantContact: t.Optional(t.String()),
         complainantAddress: t.Optional(t.String()),
@@ -79,6 +79,9 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
         priority: t.Optional(t.String()),
         filedBy: t.Optional(t.String()),
         filedById: t.Optional(t.Number()),
+        assignedOfficerIds: t.Optional(t.String()), // Comma-separated officer IDs (max 2)
+        photoUrls: t.Optional(t.Array(t.String())), // Array of photo URLs
+        videoUrls: t.Optional(t.Array(t.String())), // Array of video URLs
         suspectName: t.Optional(t.String()),
         suspectAlias: t.Optional(t.String()),
         relationToSuspect: t.Optional(t.String()),

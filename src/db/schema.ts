@@ -30,29 +30,44 @@ export const verificationCodes = pgTable("verification_codes", {
 export const blotterReports = pgTable("blotter_reports", {
   id: serial("id").primaryKey(),
   caseNumber: varchar("case_number", { length: 50 }).notNull().unique(),
+
+  // Complainant Information (First)
+  complainantName: varchar("complainant_name", { length: 200 }),
+  complainantContact: varchar("complainant_contact", { length: 50 }),
+  complainantAddress: text("complainant_address"),
+
+  // Incident Information (Second)
   incidentType: varchar("incident_type", { length: 100 }).notNull(),
   incidentDate: varchar("incident_date", { length: 50 }).notNull(),
   incidentTime: varchar("incident_time", { length: 50 }).notNull(),
   incidentLocation: text("incident_location").notNull(),
-  narrative: text("narrative").notNull(),
-  complainantName: varchar("complainant_name", { length: 200 }),
-  complainantContact: varchar("complainant_contact", { length: 50 }),
-  complainantAddress: text("complainant_address"),
-  complainantEmail: varchar("complainant_email", { length: 100 }),
-  status: varchar("status", { length: 50 }).notNull().default("Pending"),
-  priority: varchar("priority", { length: 20 }).default("Normal"),
-  assignedOfficer: varchar("assigned_officer", { length: 200 }),
-  assignedOfficerIds: text("assigned_officer_ids"),
-  filedBy: varchar("filed_by", { length: 200 }),
-  filedById: integer("filed_by_id"),
-  audioRecordingUri: text("audio_recording_uri"),
-  // Suspect Information (Optional)
+  statement: text("statement").notNull(),
+
+  // Suspect Information (Third - all optional)
   suspectName: varchar("suspect_name", { length: 200 }),
   suspectAlias: varchar("suspect_alias", { length: 200 }),
-  relationToSuspect: varchar("relation_to_suspect", { length: 100 }),
+  relationToSuspect: varchar("relation_to_suspect", { length: 100 }), // Dropdown
   lastSeenSuspectAddress: text("last_seen_suspect_address"),
   suspectContact: varchar("suspect_contact", { length: 50 }),
-  suspectOffense: varchar("suspect_offense", { length: 200 }),
+  suspectOffense: varchar("suspect_offense", { length: 200 }), // Dropdown
+
+  // Officer Assignment (Fourth)
+  assignedOfficer: varchar("assigned_officer", { length: 200 }),
+  assignedOfficerIds: text("assigned_officer_ids"), // Max 2 officers
+
+  // Filing Information
+  filedBy: varchar("filed_by", { length: 200 }),
+  filedById: integer("filed_by_id"),
+
+  // Evidence (Photo and Video only - NO AUDIO)
+  photoUrls: text("photo_urls").array(),
+  videoUrls: text("video_urls").array(),
+
+  // Status & Priority
+  status: varchar("status", { length: 50 }).notNull().default("Pending"),
+  priority: varchar("priority", { length: 20 }).default("Normal"),
+
+  // Archive & Timestamps
   isArchived: boolean("is_archived").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
