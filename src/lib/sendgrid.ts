@@ -214,7 +214,7 @@ export async function sendVerificationEmail(
           <div class="email-container">
             <!-- Header with App Icon -->
             <div class="header">
-              <div style="font-size: 72px; margin-bottom: 16px;">🛡️</div>
+              <img src="https://i.imgur.com/YOUR_IMAGE_ID.png" alt="Blotter Management System" style="width: 120px; height: 120px; margin-bottom: 16px;" />
               <h1 style="color: white; font-size: 24px; font-weight: 600; margin: 0;">Blotter Management System</h1>
             </div>
             
