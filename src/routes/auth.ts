@@ -318,6 +318,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
           user: {
             id: user.id,
             username: user.username,
+            email: user.email,
+            isActive: user.isActive,
             firstName: user.firstName,
             lastName: user.lastName,
             profilePhotoUri: user.profilePhotoUri,
