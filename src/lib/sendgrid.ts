@@ -130,32 +130,118 @@ export async function sendVerificationEmail(
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #1877F2 0%, #3B82F6 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .code-box { background: white; border: 2px dashed #1877F2; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
-          .code { font-size: 32px; font-weight: bold; color: #1877F2; letter-spacing: 8px; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6; 
+            background-color: #f5f5f5;
+            padding: 40px 20px;
+          }
+          .email-wrapper { max-width: 600px; margin: 0 auto; }
+          .email-container { 
+            background: #f5f5f0;
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+          }
+          .header { 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 60px 30px;
+            text-align: center;
+            border-radius: 0 0 32px 32px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+            position: relative;
+          }
+          .app-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+          }
+          .content-container { 
+            background: #f8fafc;
+            padding: 40px 30px;
+            margin: 30px;
+            border-radius: 32px;
+          }
+          .greeting { 
+            color: #1e293b;
+            font-size: 18px;
+            margin-bottom: 16px;
+          }
+          .message { 
+            color: #475569;
+            font-size: 15px;
+            margin-bottom: 12px;
+          }
+          .code-box { 
+            background: white;
+            border: 2px dashed #3b82f6;
+            padding: 24px;
+            text-align: center;
+            margin: 30px 0;
+            border-radius: 16px;
+          }
+          .code { 
+            font-size: 36px;
+            font-weight: bold;
+            color: #2563eb;
+            letter-spacing: 10px;
+            font-family: 'Courier New', monospace;
+          }
+          .expiry-notice { 
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #92400e;
+            font-size: 14px;
+          }
+          .footer { 
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 13px;
+          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="header">
-            <h1>📧 Email Verification</h1>
-          </div>
-          <div class="content">
-            <p>Hello${username ? ` <strong>${username}</strong>` : ''},</p>
-            <p>Thank you for registering with <strong>Blotter Management System</strong>!</p>
-            <p>Please use the following verification code to complete your registration:</p>
-            
-            <div class="code-box">
-              <div class="code">${code}</div>
+        <div class="email-wrapper">
+          <div class="email-container">
+            <!-- Header with App Icon -->
+            <div class="header">
+              <svg class="app-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer Shield (White) -->
+                <path fill="#ffffff" d="M50,10 L30,17 L30,40 Q30,60 50,70 Q70,60 70,40 L70,17 Z" />
+                <!-- Inner Shield (Dark Navy) -->
+                <path fill="#0f172a" d="M50,14 L34,20 L34,40 Q34,57 50,66 Q66,57 66,40 L66,20 Z" />
+                <!-- Badge Star (White) -->
+                <path fill="#ffffff" d="M50,30 L47.5,38 L40,40 L47.5,42 L50,50 L52.5,42 L60,40 L52.5,38 Z" />
+                <!-- Accent Lines (White) -->
+                <path stroke="#ffffff" stroke-width="1" d="M40,25 L60,25 M40,28 L60,28" fill="none" />
+              </svg>
             </div>
             
-            <p><strong>This code will expire in 10 minutes.</strong></p>
-            <p>If you didn't request this code, please ignore this email.</p>
+            <!-- Content Container -->
+            <div class="content-container">
+              <p class="greeting">Hello${username ? ` <strong>${username}</strong>` : ''},</p>
+              <p class="message">Thank you for registering with <strong>Blotter Management System</strong>!</p>
+              <p class="message">Please use the following verification code to complete your registration:</p>
+              
+              <div class="code-box">
+                <div class="code">${code}</div>
+              </div>
+              
+              <div class="expiry-notice">
+                <strong>⏱️ Important:</strong> This code will expire in <strong>10 minutes</strong>.
+              </div>
+              
+              <p class="message">If you didn't request this code, please ignore this email.</p>
+            </div>
             
             <div class="footer">
               <p>© 2025 Blotter Management System. All rights reserved.</p>
@@ -174,7 +260,8 @@ export async function sendVerificationEmail(
     console.error('❌ SendGrid error:', error);
     throw new Error('Failed to send verification email');
   }
-}
+}
+
 
 /**
  * Send password reset code email
@@ -195,36 +282,118 @@ export async function sendPasswordResetEmail(
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #1877F2 0%, #3B82F6 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .code-box { background: white; border: 2px dashed #1877F2; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
-          .code { font-size: 32px; font-weight: bold; color: #1877F2; letter-spacing: 8px; }
-          .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; border-radius: 4px; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6; 
+            background-color: #f5f5f5;
+            padding: 40px 20px;
+          }
+          .email-wrapper { max-width: 600px; margin: 0 auto; }
+          .email-container { 
+            background: #f5f5f0;
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+          }
+          .header { 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 60px 30px;
+            text-align: center;
+            border-radius: 0 0 32px 32px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+            position: relative;
+          }
+          .app-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+          }
+          .content-container { 
+            background: #f8fafc;
+            padding: 40px 30px;
+            margin: 30px;
+            border-radius: 32px;
+          }
+          .greeting { 
+            color: #1e293b;
+            font-size: 18px;
+            margin-bottom: 16px;
+          }
+          .message { 
+            color: #475569;
+            font-size: 15px;
+            margin-bottom: 12px;
+          }
+          .code-box { 
+            background: white;
+            border: 2px dashed #ef4444;
+            padding: 24px;
+            text-align: center;
+            margin: 30px 0;
+            border-radius: 16px;
+          }
+          .code { 
+            font-size: 36px;
+            font-weight: bold;
+            color: #dc2626;
+            letter-spacing: 10px;
+            font-family: 'Courier New', monospace;
+          }
+          .warning { 
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #991b1b;
+            font-size: 14px;
+          }
+          .footer { 
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 13px;
+          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="header">
-            <h1>🔐 Password Reset</h1>
-          </div>
-          <div class="content">
-            <p>Hello${username ? ` <strong>${username}</strong>` : ''},</p>
-            <p>We received a request to reset your password for your <strong>Blotter Management System</strong> account.</p>
-            <p>Please use the following code to reset your password:</p>
-            
-            <div class="code-box">
-              <div class="code">${code}</div>
+        <div class="email-wrapper">
+          <div class="email-container">
+            <!-- Header with App Icon -->
+            <div class="header">
+              <svg class="app-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer Shield (White) -->
+                <path fill="#ffffff" d="M50,10 L30,17 L30,40 Q30,60 50,70 Q70,60 70,40 L70,17 Z" />
+                <!-- Inner Shield (Dark Navy) -->
+                <path fill="#0f172a" d="M50,14 L34,20 L34,40 Q34,57 50,66 Q66,57 66,40 L66,20 Z" />
+                <!-- Badge Star (White) -->
+                <path fill="#ffffff" d="M50,30 L47.5,38 L40,40 L47.5,42 L50,50 L52.5,42 L60,40 L52.5,38 Z" />
+                <!-- Accent Lines (White) -->
+                <path stroke="#ffffff" stroke-width="1" d="M40,25 L60,25 M40,28 L60,28" fill="none" />
+              </svg>
             </div>
             
-            <div class="warning">
-              <strong>⚠️ Important:</strong> This code will expire in <strong>10 minutes</strong>.
+            <!-- Content Container -->
+            <div class="content-container">
+              <p class="greeting">Hello${username ? ` <strong>${username}</strong>` : ''},</p>
+              <p class="message">We received a request to reset your password for your <strong>Blotter Management System</strong> account.</p>
+              <p class="message">Please use the following code to reset your password:</p>
+              
+              <div class="code-box">
+                <div class="code">${code}</div>
+              </div>
+              
+              <div class="warning">
+                <strong>⚠️ Security Notice:</strong> This code will expire in <strong>10 minutes</strong>. If you didn't request this, please ignore this email.
+              </div>
+              
+              <p class="message">Your password will remain unchanged if you don't use this code.</p>
             </div>
-            
-            <p>If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
             
             <div class="footer">
               <p>© 2025 Blotter Management System. All rights reserved.</p>
