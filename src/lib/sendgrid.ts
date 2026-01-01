@@ -1,4 +1,4 @@
-import sgMail from '@sendgrid/mail';
+﻿import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
@@ -174,7 +174,7 @@ export async function sendVerificationEmail(
     console.error('❌ SendGrid error:', error);
     throw new Error('Failed to send verification email');
   }
-}
+}
 
 /**
  * Send password reset code email
@@ -207,27 +207,27 @@ export async function sendPasswordResetEmail(
         </style>
       </head>
       <body>
-        <div class=\""container\"">
-          <div class=\""header\"">
-            <h1>?? Password Reset</h1>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Password Reset</h1>
           </div>
-          <div class=\""content\"">
-            <p>Hello{username ? ` <strong>{username}</strong>` : ''},</p>
+          <div class="content">
+            <p>Hello${username ? ` <strong>${username}</strong>` : ''},</p>
             <p>We received a request to reset your password for your <strong>Blotter Management System</strong> account.</p>
             <p>Please use the following code to reset your password:</p>
             
-            <div class=\""code-box\"">
-              <div class=\""code\""></div>
+            <div class="code-box">
+              <div class="code">${code}</div>
             </div>
             
-            <div class=\""warning\"">
-              <strong>?? Important:</strong> This code will expire in <strong>10 minutes</strong>.
+            <div class="warning">
+              <strong>⚠️ Important:</strong> This code will expire in <strong>10 minutes</strong>.
             </div>
             
             <p>If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
             
-            <div class=\""footer\"">
-              <p>� 2025 Blotter Management System. All rights reserved.</p>
+            <div class="footer">
+              <p>© 2025 Blotter Management System. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -238,9 +238,9 @@ export async function sendPasswordResetEmail(
 
   try {
     await sgMail.send(msg);
-    console.log(`? Password reset email sent to {to}`);
+    console.log(`✅ Password reset email sent to ${to}`);
   } catch (error) {
-    console.error('? SendGrid error:', error);
+    console.error('❌ SendGrid error:', error);
     throw new Error('Failed to send password reset email');
   }
 }
