@@ -115,7 +115,7 @@ export const evidence = pgTable("evidence", {
   evidenceType: varchar("evidence_type", { length: 100 }).notNull(),
   description: text("description").notNull(),
   locationFound: text("location_found"),
-  photoUri: text("photo_uri"),
+  photoUrl: text("photo_url"), // Cloudinary URL for evidence photo/video
   collectedBy: varchar("collected_by", { length: 200 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
