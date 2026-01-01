@@ -46,6 +46,13 @@ export const blotterReports = pgTable("blotter_reports", {
   filedBy: varchar("filed_by", { length: 200 }),
   filedById: integer("filed_by_id"),
   audioRecordingUri: text("audio_recording_uri"),
+  // Suspect Information (Optional)
+  suspectName: varchar("suspect_name", { length: 200 }),
+  suspectAlias: varchar("suspect_alias", { length: 200 }),
+  relationToSuspect: varchar("relation_to_suspect", { length: 100 }),
+  lastSeenSuspectAddress: text("last_seen_suspect_address"),
+  suspectContact: varchar("suspect_contact", { length: 50 }),
+  suspectOffense: varchar("suspect_offense", { length: 200 }),
   isArchived: boolean("is_archived").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

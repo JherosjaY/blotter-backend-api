@@ -50,7 +50,7 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
           newReport.id,
           newReport.complainantName || "Unknown"
         );
-        
+
         // If filed by a user, notify them that case was filed successfully
         if (body.filedById) {
           await FCM.notifyUserCaseFiled(db, body.filedById, newReport.caseNumber);
@@ -79,6 +79,12 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
         priority: t.Optional(t.String()),
         filedBy: t.Optional(t.String()),
         filedById: t.Optional(t.Number()),
+        suspectName: t.Optional(t.String()),
+        suspectAlias: t.Optional(t.String()),
+        relationToSuspect: t.Optional(t.String()),
+        lastSeenSuspectAddress: t.Optional(t.String()),
+        suspectContact: t.Optional(t.String()),
+        suspectOffense: t.Optional(t.String()),
       }),
     }
   )
@@ -119,7 +125,7 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
         // If officer assigned, notify officer and complainant
         if (body.assignedOfficerIds && oldReport && body.assignedOfficerIds !== oldReport.assignedOfficerIds) {
           const officerIds = body.assignedOfficerIds.split(',').map(id => parseInt(id.trim()));
-          
+
           for (const officerId of officerIds) {
             await FCM.notifyOfficerCaseAssigned(
               db,
@@ -158,6 +164,12 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
           assignedOfficerIds: t.String(),
           priority: t.String(),
           isArchived: t.Boolean(),
+          suspectName: t.String(),
+          suspectAlias: t.String(),
+          relationToSuspect: t.String(),
+          lastSeenSuspectAddress: t.String(),
+          suspectContact: t.String(),
+          suspectOffense: t.String(),
         })
       ),
     }
@@ -178,6 +190,23 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
     return {
       success: true,
       message: "Report deleted successfully",
+    };
+  })
+
+  // Get reports filed by specific user
+  .get("/user/:userId", async ({ params }) => {
+    const userId = parseInt(params.userId);
+
+    const userReports = await db.query.blotterReports.findMany({
+      where: eq(blotterReports.filedById, userId),
+      orderBy: desc(blotterReports.createdAt),
+    });
+
+    console.log(`📋 Fetched ${userReports.length} reports for user ${userId}`);
+
+    return {
+      success: true,
+      data: userReports,
     };
   })
 
