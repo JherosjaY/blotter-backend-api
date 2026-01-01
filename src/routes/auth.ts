@@ -1,4 +1,4 @@
-import { Elysia, t } from "elysia";
+﻿import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { users, verificationCodes } from "../db/schema";
 import { eq, and, gt, isNull } from "drizzle-orm";
@@ -408,7 +408,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
         if (!user) {
           set.status = 404;
-          return { success: false, message: "No account found with this email" };
+          return { success: false, message: "No account found with this email. Please register first." };
         }
 
         // Generate reset code
@@ -470,7 +470,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
         if (!resetCode) {
           set.status = 400;
-          return { success: false, message: "Invalid or expired reset code" };
+          return { success: false, message: "Invalid or expired reset code. Please request a new one." };
         }
 
         console.log(`? Reset code verified for {email}`);
@@ -512,7 +512,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
         if (!resetCode) {
           set.status = 400;
-          return { success: false, message: "Invalid or expired reset code" };
+          return { success: false, message: "Invalid or expired reset code. Please request a new one." };
         }
 
         // Get user
