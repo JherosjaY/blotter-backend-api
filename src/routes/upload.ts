@@ -12,26 +12,29 @@ export const uploadRoutes = new Elysia({ prefix: "/upload" })
                 const { photo, userId } = body;
                 console.log(`📸 Upload request for user ID: ${userId}`);
 
-                // Validate base64 image
-                if (!photo || !photo.startsWith("data:image/")) {
-                    console.error("❌ Invalid image format - missing data:image/ prefix");
+                // Validate base64 media (image or video)
+                const isImage = photo && photo.startsWith("data:image/");
+                const isVideo = photo && photo.startsWith("data:video/");
+
+                if (!isImage && !isVideo) {
+                    console.error("❌ Invalid media format - must be data:image/ or data:video/");
                     set.status = 400;
-                    return { success: false, message: "Invalid image format" };
+                    return { success: false, message: "Invalid media format" };
                 }
 
-                console.log("✅ Image format validated");
+                console.log(`✅ Media format validated: ${isImage ? 'image' : 'video'}`);
 
                 // Upload to Cloudinary
                 console.log("☁️ Uploading to Cloudinary...");
                 const uploadResult = await cloudinary.uploader.upload(photo, {
-                    folder: "profile-pictures",
-                    public_id: `user_${userId}_${Date.now()}`,
-                    resource_type: "image",
-                    transformation: [
+                    folder: isImage ? "profile-pictures" : "evidence-videos",
+                    public_id: `${isImage ? 'user' : 'evidence'}_${userId}_${Date.now()}`,
+                    resource_type: isImage ? "image" : "video",
+                    transformation: isImage ? [
                         { width: 500, height: 500, crop: "limit" },
                         { quality: "auto" },
                         { fetch_format: "auto" }
-                    ]
+                    ] : undefined
                 });
 
                 console.log(`✅ Upload successful!`);
