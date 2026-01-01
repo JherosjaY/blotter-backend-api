@@ -214,16 +214,8 @@ export async function sendVerificationEmail(
           <div class="email-container">
             <!-- Header with App Icon -->
             <div class="header">
-              <svg class="app-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <!-- Outer Shield (White) -->
-                <path fill="#ffffff" d="M50,10 L30,17 L30,40 Q30,60 50,70 Q70,60 70,40 L70,17 Z" />
-                <!-- Inner Shield (Dark Navy) -->
-                <path fill="#0f172a" d="M50,14 L34,20 L34,40 Q34,57 50,66 Q66,57 66,40 L66,20 Z" />
-                <!-- Badge Star (White) -->
-                <path fill="#ffffff" d="M50,30 L47.5,38 L40,40 L47.5,42 L50,50 L52.5,42 L60,40 L52.5,38 Z" />
-                <!-- Accent Lines (White) -->
-                <path stroke="#ffffff" stroke-width="1" d="M40,25 L60,25 M40,28 L60,28" fill="none" />
-              </svg>
+              <div style="font-size: 72px; margin-bottom: 16px;">🛡️</div>
+              <h1 style="color: white; font-size: 24px; font-weight: 600; margin: 0;">Blotter Management System</h1>
             </div>
             
             <!-- Content Container -->
