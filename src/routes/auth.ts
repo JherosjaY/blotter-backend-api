@@ -210,38 +210,23 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     async ({ body, set }) => {
       const { email } = body;
 
-      // ✅ Check if there's already a valid verification code
-      const existingCode = await db.query.verificationCodes.findFirst({
-        where: and(
-          eq(verificationCodes.email, email),
-          gt(verificationCodes.expiresAt, new Date())
-        ),
+
+      // ✅ PROFESSIONAL PRACTICE: Always generate NEW code on resend
+      // Delete any existing codes for this email (valid or expired)
+      await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+
+      // Generate fresh verification code
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Store new verification code
+      await db.insert(verificationCodes).values({
+        email,
+        code,
+        expiresAt,
       });
 
-      let codeToSend: string;
-
-      if (existingCode) {
-        // ✅ Reuse existing valid code
-        codeToSend = existingCode.code;
-        console.log(`♻️ Reusing existing code for ${email}`);
-      } else {
-        // ❌ No valid code exists, create new one
-        const code = generateVerificationCode();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-        // Delete old codes for this email
-        await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
-
-        // Store new verification code
-        await db.insert(verificationCodes).values({
-          email,
-          code,
-          expiresAt,
-        });
-
-        codeToSend = code;
-        console.log(`🆕 Created new code for ${email}`);
-      }
+      console.log(`🆕 Generated new code for ${email}`);
 
       try {
         // Get username from database for personalized email
@@ -251,8 +236,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
         const username = user?.username;
 
-        // Send verification email with the code (existing or new)
-        await sendVerificationEmail(email, codeToSend, username);
+        // Send verification email with the NEW code
+        await sendVerificationEmail(email, code, username);
 
         return {
           success: true,
