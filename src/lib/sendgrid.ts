@@ -183,10 +183,12 @@ export async function sendVerificationEmail(
           }
           .app-title {
             color: #ffffff;
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 28px;
+            font-weight: 700;
             margin: 0;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
           }
           .content-card { 
             background: #1e293b;
@@ -251,8 +253,7 @@ export async function sendVerificationEmail(
         <div class="email-wrapper">
           <div class="email-container">
             <div class="header">
-              <img src="cid:logo" alt="BMS Logo" class="app-logo">
-              <h1 class="app-title">Blotter Management System</h1>
+              <h1 class="app-title">🛡️ Blotter Management System</h1>
             </div>
             <div class="content-card">
               <p class="greeting">Hello${username ? ` <strong>${username}</strong>` : ''}! 👋</p>
