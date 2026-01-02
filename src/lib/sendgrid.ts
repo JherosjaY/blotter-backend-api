@@ -137,8 +137,9 @@ export async function sendVerificationEmail(
   code: string,
   username?: string
 ): Promise<void> {
-  const logoAttachment = getLogoAttachment();
-  const attachments = [logoAttachment];
+  // ❌ TEMPORARILY REMOVED: Logo attachment causing base64 encoding error
+  // const logoAttachment = getLogoAttachment();
+  // const attachments = [logoAttachment];
 
   const msg = {
     to,
@@ -273,7 +274,7 @@ export async function sendVerificationEmail(
       </body>
       </html>
     `,
-    attachments: attachments
+    // ❌ REMOVED: attachments field causing base64 encoding error
   };
 
   try {
