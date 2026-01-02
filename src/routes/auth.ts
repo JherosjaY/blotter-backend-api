@@ -303,7 +303,11 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
       if (!user.isActive) {
         set.status = 403;
-        return { success: false, message: "Account is inactive" };
+        return {
+          success: false,
+          message: "Account is inactive. Please verify your email.",
+          data: { email: user.email } // ✅ Return email so app can redirect to verification
+        };
       }
 
       // Generate token
