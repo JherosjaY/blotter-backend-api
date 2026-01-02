@@ -553,4 +553,27 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         newPassword: t.String(),
       }),
     }
+  )
+
+  // Update Tooltip Flag
+  .patch(
+    "/users/:id/tooltips",
+    async ({ params, set }) => {
+      const userId = parseInt(params.id);
+
+      try {
+        await db.update(users)
+          .set({ hasSeenTooltips: true })
+          .where(eq(users.id, userId));
+
+        return {
+          success: true,
+          message: "Tooltip flag updated successfully",
+        };
+      } catch (error) {
+        console.error("❌ Error updating tooltip flag:", error);
+        set.status = 500;
+        return { success: false, message: "Failed to update tooltip flag" };
+      }
+    }
   );

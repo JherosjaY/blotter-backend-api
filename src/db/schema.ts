@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   profilePhotoUri: text("profile_photo_uri"),
   isActive: boolean("is_active").default(false),
   profileCompleted: boolean("profile_completed").default(false),
+  hasSeenTooltips: boolean("has_seen_tooltips").default(false), // ✅ Track if user has seen dashboard tooltips
   fcmToken: text("fcm_token"), // Firebase Cloud Messaging token
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
