@@ -13,8 +13,32 @@ export interface EmailOptions {
   text?: string;
 }
 
+// Helper to read logo file
+async function getLogoAttachment() {
+  try {
+    const logoFile = Bun.file('src/logo.png');
+    if (await logoFile.exists()) {
+      const buffer = await logoFile.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString('base64');
+      return {
+        content: base64,
+        filename: 'logo.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'logo'
+      };
+    }
+  } catch (e) {
+    console.error('Error reading logo file:', e);
+  }
+  return null;
+}
+
 export async function sendEmail(options: EmailOptions) {
   try {
+    const logoAttachment = await getLogoAttachment();
+    const attachments = logoAttachment ? [logoAttachment] : [];
+
     await sgMail.send({
       to: options.to,
       from: {
@@ -24,6 +48,7 @@ export async function sendEmail(options: EmailOptions) {
       subject: options.subject,
       html: options.html,
       text: options.text || options.html.replace(/<[^>]*>/g, ''),
+      attachments: attachments
     });
 
     console.log(`Email sent to ${options.to}: ${options.subject}`);
