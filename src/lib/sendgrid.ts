@@ -279,9 +279,10 @@ export async function sendVerificationEmail(
   try {
     await sgMail.send(msg);
     console.log(`✅ Verification email sent to ${to}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ SendGrid error:', error);
-    throw new Error(error.message || 'Failed to send verification email');
+    console.error('❌ SendGrid error response:', JSON.stringify(error.response?.body, null, 2));
+    throw new Error(error.response?.body?.errors?.[0]?.message || error.message || 'Failed to send verification email');
   }
 }
 
