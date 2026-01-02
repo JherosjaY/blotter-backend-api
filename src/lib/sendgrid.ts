@@ -229,7 +229,7 @@ export async function sendVerificationEmail(
         <div class="email-wrapper">
           <div class="email-container">
             <div class="header">
-              <img src="REPLACE_WITH_LOGO_DATA_URI" alt="BMS Logo" class="app-logo">
+              <img src="https://res.cloudinary.com/do9ty8tem/image/upload/v1767312230/email_logo.png" alt="BMS Logo" class="app-logo">
               <h1 class="app-title">Blotter Management System</h1>
             </div>
             <div class="content-card">
@@ -391,7 +391,7 @@ export async function sendPasswordResetEmail(
         <div class="email-wrapper">
           <div class="email-container">
             <div class="header">
-              <img src="REPLACE_WITH_LOGO_DATA_URI" alt="BMS Logo" class="app-logo">
+              <img src="https://res.cloudinary.com/do9ty8tem/image/upload/v1767312230/email_logo.png" alt="BMS Logo" class="app-logo">
               <h1 class="app-title">Blotter Management System</h1>
             </div>
             <div class="content-card">
