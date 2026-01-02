@@ -281,7 +281,7 @@ export async function sendVerificationEmail(
     console.log(`✅ Verification email sent to ${to}`);
   } catch (error) {
     console.error('❌ SendGrid error:', error);
-    throw new Error('Failed to send verification email');
+    throw new Error(error.message || 'Failed to send verification email');
   }
 }
 
