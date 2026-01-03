@@ -63,15 +63,15 @@ export const blotterReports = pgTable("blotter_reports", {
   incidentDate: varchar("incident_date", { length: 50 }).notNull(),
   incidentTime: varchar("incident_time", { length: 50 }).notNull(),
   incidentLocation: text("incident_location").notNull(),
-  statement: text("statement").notNull(),
+  narrative: text("narrative").notNull(), // ✅ Changed from 'statement' to match Supabase
 
-  // Suspect Information (Third - all optional)
-  suspectName: varchar("suspect_name", { length: 200 }),
-  suspectAlias: varchar("suspect_alias", { length: 200 }),
-  relationToSuspect: varchar("relation_to_suspect", { length: 100 }), // Dropdown
-  lastSeenSuspectAddress: text("last_seen_suspect_address"),
-  suspectContact: varchar("suspect_contact", { length: 50 }),
-  suspectOffense: varchar("suspect_offense", { length: 200 }), // Dropdown
+  // Respondent Information (Third - all optional) - ✅ Changed from 'suspect' to 'respondent'
+  respondentName: varchar("respondent_name", { length: 200 }),
+  respondentAlias: varchar("respondent_alias", { length: 200 }),
+  relationship: varchar("relationship", { length: 100 }), // ✅ Changed from 'relation_to_suspect'
+  respondentAddress: text("respondent_address"), // ✅ Changed from 'last_seen_suspect_address'
+  respondentContact: varchar("respondent_contact", { length: 50 }),
+  accusation: varchar("accusation", { length: 200 }), // ✅ Changed from 'suspect_offense'
 
   // Officer Assignment (Fourth)
   assignedOfficer: varchar("assigned_officer", { length: 200 }),
@@ -79,7 +79,7 @@ export const blotterReports = pgTable("blotter_reports", {
 
   // Filing Information
   filedBy: varchar("filed_by", { length: 200 }),
-  filedById: integer("filed_by_id"),
+  userId: integer("user_id"), // ✅ Changed from 'filed_by_id' to match Supabase
 
   // Evidence (Photo and Video only - NO AUDIO)
   photoUrls: text("photo_urls").array(),
@@ -91,8 +91,12 @@ export const blotterReports = pgTable("blotter_reports", {
 
   // Archive & Timestamps
   isArchived: boolean("is_archived").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  dateFiled: integer("date_filed"), // ✅ Changed from 'created_at' - bigint timestamp
   updatedAt: timestamp("updated_at").defaultNow(),
+
+  // Location fields
+  latitude: integer("latitude"), // ✅ Added to match Supabase (double precision)
+  longitude: integer("longitude"), // ✅ Added to match Supabase (double precision)
 });
 
 // Officers Table
@@ -110,7 +114,7 @@ export const officers = pgTable("officers", {
   idType: varchar("id_type", { length: 50 }), // ✅ Type of ID uploaded
   userId: integer("user_id"), // ✅ Keep for backward compatibility (optional)
   isActive: boolean("is_active").default(true),
-  onDuty: boolean("on_duty").default(false), // ✅ Off-Duty/On-Duty status
+  // ❌ Removed 'onDuty' field - not in Supabase
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(), // ✅ Track updates
 });
@@ -123,7 +127,7 @@ export const witnesses = pgTable("witnesses", {
   contactNumber: varchar("contact_number", { length: 50 }),
   address: text("address"),
   statement: text("statement"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: integer("created_at"), // ✅ Changed to bigint to match Supabase
 });
 
 // Suspects Table
@@ -131,10 +135,18 @@ export const suspects = pgTable("suspects", {
   id: serial("id").primaryKey(),
   blotterReportId: integer("blotter_report_id").notNull(),
   name: varchar("name", { length: 200 }).notNull(),
+  alias: varchar("alias", { length: 200 }), // ✅ Added to match Supabase
   age: integer("age"),
+  gender: varchar("gender", { length: 50 }), // ✅ Added to match Supabase
   address: text("address"),
   description: text("description"),
-  createdAt: timestamp("created_at").defaultNow(),
+  photoUri: text("photo_uri"), // ✅ Added to match Supabase
+  dateAdded: integer("date_added"), // ✅ Changed from created_at - bigint timestamp
+  identificationStatus: varchar("identification_status", { length: 50 }).default("identified"), // ✅ Added
+  physicalDescription: text("physical_description"), // ✅ Added
+  estimatedAgeRange: varchar("estimated_age_range", { length: 50 }), // ✅ Added
+  distinguishingFeatures: text("distinguishing_features"), // ✅ Added
+  lastKnownLocation: text("last_known_location"), // ✅ Added
 });
 
 // Evidence Table
@@ -157,10 +169,17 @@ export const hearings = pgTable("hearings", {
   hearingTime: varchar("hearing_time", { length: 50 }).notNull(),
   location: text("location").notNull(),
   purpose: text("purpose"),
-  presidingOfficer: varchar("presiding_officer", { length: 200 }), // ✅ Officer/s name
   status: varchar("status", { length: 50 }).default("Scheduled"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: integer("created_at"), // ✅ Changed to bigint to match Supabase
+  approvalStatus: varchar("approval_status", { length: 50 }).default("PENDING"), // ✅ Added
+  approvedBy: integer("approved_by"), // ✅ Added
+  approvalDate: integer("approval_date"), // ✅ Added - bigint
+  declineReason: text("decline_reason"), // ✅ Added
+  reminderScheduled: boolean("reminder_scheduled").default(false), // ✅ Added
+  remindersSent: text("reminders_sent"), // ✅ Added
+  attendanceStatus: varchar("attendance_status", { length: 50 }).default("PENDING"), // ✅ Added
+  completedAt: integer("completed_at"), // ✅ Added - bigint
+  presidingOfficer: varchar("presiding_officer", { length: 200 }), // ✅ Officer/s name
 });
 
 // Resolutions Table
@@ -169,9 +188,9 @@ export const resolutions = pgTable("resolutions", {
   blotterReportId: integer("blotter_report_id").notNull(),
   resolutionType: varchar("resolution_type", { length: 100 }).notNull(),
   resolutionDetails: text("resolution_details").notNull(),
-  resolvedDate: varchar("resolved_date", { length: 50 }).notNull(),
-  resolvedBy: varchar("resolved_by", { length: 200 }),
-  createdAt: timestamp("created_at").defaultNow(),
+  resolvedBy: varchar("resolved_by", { length: 200 }).notNull(),
+  resolvedDate: integer("resolved_date").notNull(), // ✅ Changed to bigint to match Supabase
+  createdAt: integer("created_at"), // ✅ Changed to bigint to match Supabase
 });
 
 // Activity Logs Table
