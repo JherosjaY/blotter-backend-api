@@ -297,8 +297,9 @@ export async function sendPasswordResetEmail(
   code: string,
   username?: string
 ): Promise<void> {
-  const logoAttachment = getLogoAttachment();
-  const attachments = [logoAttachment];
+  // ❌ REMOVED: Logo attachment causing SendGrid 400 error
+  // const logoAttachment = getLogoAttachment();
+  // const attachments = [logoAttachment];
 
   const msg = {
     to,
@@ -419,7 +420,7 @@ export async function sendPasswordResetEmail(
         <div class="email-wrapper">
           <div class="email-container">
             <div class="header">
-              <img src="cid:logo" alt="BMS Logo" class="app-logo">
+              <!-- Logo removed due to SendGrid error -->
               <h1 class="app-title">Blotter Management System</h1>
             </div>
             <div class="content-card">
@@ -444,7 +445,7 @@ export async function sendPasswordResetEmail(
       </body>
       </html>
     `,
-    attachments: attachments
+    // ❌ REMOVED: attachments field causing SendGrid 400 error
   };
 
   try {
@@ -467,8 +468,9 @@ export async function sendOfficerCredentialsEmail(
   rank: string,
   badgeNumber: string
 ): Promise<void> {
-  const logoAttachment = getLogoAttachment();
-  const attachments = [logoAttachment];
+  // ❌ REMOVED: Logo attachment causing SendGrid 400 error
+  // const logoAttachment = getLogoAttachment();
+  // const attachments = [logoAttachment];
 
   const msg = {
     to,
@@ -587,7 +589,7 @@ export async function sendOfficerCredentialsEmail(
         <div class="email-wrapper">
           <div class="email-container">
             <div class="header">
-              <img src="cid:logo" alt="BMS Logo" class="app-logo">
+              <!-- Logo removed due to SendGrid error -->
               <h1 class="app-title">Blotter Management System</h1>
             </div>
             <div class="content-card">
@@ -626,7 +628,7 @@ export async function sendOfficerCredentialsEmail(
       </body>
       </html>
     `,
-    attachments: attachments
+    // ❌ REMOVED: attachments field causing SendGrid 400 error
   };
 
   try {
