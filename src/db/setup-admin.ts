@@ -16,7 +16,17 @@ async function setupAdmin() {
         });
 
         if (existingAdmin) {
-            console.log("✅ Admin account already exists");
+            console.log("✅ Admin account found - updating password to ensure it's correct...");
+
+            // Hash password
+            const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+            // Update password to ensure it matches
+            await db.update(admins)
+                .set({ password: hashedPassword })
+                .where(eq(admins.username, adminUsername));
+
+            console.log("✅ Admin password updated successfully");
             console.log(`   Username: ${adminUsername}`);
             console.log(`   Password: ${adminPassword}`);
             return;
