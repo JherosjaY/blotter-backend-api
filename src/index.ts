@@ -30,6 +30,7 @@ import { notificationsRoutes } from "./routes/notifications";
 import { respondentsRoutes } from "./routes/respondents";
 import { uploadRoutes } from "./routes/upload";
 import { investigationRoutes } from "./routes/investigation";
+import { smsRoutes } from "./routes/sms";
 
 export const app = new Elysia()
   .use(
@@ -100,6 +101,7 @@ export const app = new Elysia()
       .use(respondentsRoutes)
       .use(uploadRoutes)
       .use(investigationRoutes)
+      .use(smsRoutes)
   )
   .listen(process.env.PORT || 3000);
 
