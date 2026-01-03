@@ -2,12 +2,19 @@ import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import FCM from "../backend-fcm-helper.js";
+import { setupAdmin } from "./db/setup-admin";
 
 // Initialize Firebase Cloud Messaging
 FCM.initializeFCM();
 
+// Setup admin account (auto-creates if doesn't exist)
+setupAdmin().catch(console.error);
+
 // Import routes
 import { authRoutes } from "./routes/auth";
+import { adminRoutes } from "./routes/admin";
+import { adminOfficerRoutes } from "./routes/admin-officers";
+import { officerRoutes } from "./routes/officer";
 import { reportsRoutes } from "./routes/reports";
 import { usersRoutes } from "./routes/users";
 import { officersRoutes } from "./routes/officers";
@@ -22,6 +29,7 @@ import { activityLogsRoutes } from "./routes/activityLogs";
 import { notificationsRoutes } from "./routes/notifications";
 import { respondentsRoutes } from "./routes/respondents";
 import { uploadRoutes } from "./routes/upload";
+import { investigationRoutes } from "./routes/investigation";
 
 export const app = new Elysia()
   .use(
@@ -49,6 +57,7 @@ export const app = new Elysia()
     endpoints: {
       swagger: "/swagger",
       auth: "/api/auth",
+      admin: "/api/admin",
       reports: "/api/reports",
       users: "/api/users",
       officers: "/api/officers",
@@ -73,6 +82,9 @@ export const app = new Elysia()
   .group("/api", (app) =>
     app
       .use(authRoutes)
+      .use(adminRoutes)
+      .use(adminOfficerRoutes)
+      .use(officerRoutes)
       .use(reportsRoutes)
       .use(usersRoutes)
       .use(officersRoutes)
@@ -87,6 +99,7 @@ export const app = new Elysia()
       .use(notificationsRoutes)
       .use(respondentsRoutes)
       .use(uploadRoutes)
+      .use(investigationRoutes)
   )
   .listen(process.env.PORT || 3000);
 

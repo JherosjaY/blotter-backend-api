@@ -17,6 +17,27 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Admins Table (Separate table for admin accounts)
+export const admins = pgTable("admins", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 50 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Officer Auth Table (Separate authentication for officers)
+export const officerAuth = pgTable("officer_auth", {
+  id: serial("id").primaryKey(),
+  officerId: integer("officer_id").notNull().unique(),
+  username: varchar("username", { length: 50 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  mustChangePassword: boolean("must_change_password").default(true),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Verification Codes Table (for email verification)
 export const verificationCodes = pgTable("verification_codes", {
   id: serial("id").primaryKey(),
@@ -80,11 +101,18 @@ export const officers = pgTable("officers", {
   name: varchar("name", { length: 200 }).notNull(),
   badgeNumber: varchar("badge_number", { length: 50 }).notNull().unique(),
   rank: varchar("rank", { length: 50 }),
+  gender: varchar("gender", { length: 10 }), // ✅ Male, Female
+  pnpNumber: varchar("pnp_number", { length: 20 }), // ✅ PNP ID number
   contactNumber: varchar("contact_number", { length: 50 }),
   email: varchar("email", { length: 100 }),
-  userId: integer("user_id"),
+  validIdFrontUrl: text("valid_id_front_url"), // ✅ Front ID photo URL
+  validIdBackUrl: text("valid_id_back_url"), // ✅ Back ID photo URL
+  idType: varchar("id_type", { length: 50 }), // ✅ Type of ID uploaded
+  userId: integer("user_id"), // ✅ Keep for backward compatibility (optional)
   isActive: boolean("is_active").default(true),
+  onDuty: boolean("on_duty").default(false), // ✅ Off-Duty/On-Duty status
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(), // ✅ Track updates
 });
 
 // Witnesses Table
@@ -129,6 +157,7 @@ export const hearings = pgTable("hearings", {
   hearingTime: varchar("hearing_time", { length: 50 }).notNull(),
   location: text("location").notNull(),
   purpose: text("purpose"),
+  presidingOfficer: varchar("presiding_officer", { length: 200 }), // ✅ Officer/s name
   status: varchar("status", { length: 50 }).default("Scheduled"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),

@@ -455,3 +455,186 @@ export async function sendPasswordResetEmail(
     throw new Error('Failed to send password reset email');
   }
 }
+
+/**
+ * Send officer credentials email
+ */
+export async function sendOfficerCredentialsEmail(
+  to: string,
+  officerName: string,
+  username: string,
+  password: string,
+  rank: string,
+  badgeNumber: string
+): Promise<void> {
+  const logoAttachment = getLogoAttachment();
+  const attachments = [logoAttachment];
+
+  const msg = {
+    to,
+    from: {
+      email: FROM_EMAIL,
+      name: FROM_NAME,
+    },
+    subject: 'Officer Account Created - Blotter Management System',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px 20px;
+            line-height: 1.6;
+          }
+          .email-wrapper { max-width: 600px; margin: 0 auto; }
+          .email-container { 
+            background: #ffffff;
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+          }
+          .header { 
+            background: #0f172a;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 32px 32px 0 0;
+          }
+          .app-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px auto;
+            display: block;
+          }
+          .app-title {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: 0.5px;
+          }
+          .content-card { 
+            background: #1e293b;
+            padding: 40px 30px;
+            border-radius: 0 0 32px 32px;
+          }
+          .greeting { 
+            color: #ffffff;
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 500;
+          }
+          .message { 
+            color: #94a3b8;
+            font-size: 15px;
+            margin-bottom: 12px;
+          }
+          .credentials-container { 
+            background: #0f172a;
+            border: 2px solid #10b981;
+            padding: 24px;
+            margin: 30px 0;
+            border-radius: 16px;
+          }
+          .credential-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #334155;
+          }
+          .credential-row:last-child {
+            border-bottom: none;
+          }
+          .credential-label {
+            font-size: 13px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .credential-value { 
+            font-size: 16px;
+            font-weight: bold;
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+          }
+          .security-notice {
+            background: rgba(245, 158, 11, 0.15);
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #fbbf24;
+            font-size: 14px;
+          }
+          .footer { 
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 13px;
+          }
+          .brand-name {
+            color: #3b82f6;
+            font-weight: 600;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrapper">
+          <div class="email-container">
+            <div class="header">
+              <img src="cid:logo" alt="BMS Logo" class="app-logo">
+              <h1 class="app-title">Blotter Management System</h1>
+            </div>
+            <div class="content-card">
+              <p class="greeting">Welcome, <strong>${officerName}</strong>! 👮</p>
+              <p class="message">Your officer account has been successfully created in the <span class="brand-name">Blotter Management System</span>.</p>
+              <p class="message">Below are your login credentials:</p>
+              <div class="credentials-container">
+                <div class="credential-row">
+                  <span class="credential-label">Rank</span>
+                  <span class="credential-value">${rank}</span>
+                </div>
+                <div class="credential-row">
+                  <span class="credential-label">Badge Number</span>
+                  <span class="credential-value">${badgeNumber}</span>
+                </div>
+                <div class="credential-row">
+                  <span class="credential-label">Username</span>
+                  <span class="credential-value">${username}</span>
+                </div>
+                <div class="credential-row">
+                  <span class="credential-label">Temporary Password</span>
+                  <span class="credential-value">${password}</span>
+                </div>
+              </div>
+              <div class="security-notice">
+                🔒 <strong>Important:</strong> You will be required to change your password upon first login. Please keep these credentials secure and do not share them with anyone.
+              </div>
+              <p class="message">You can now log in to the mobile app using these credentials.</p>
+            </div>
+            <div class="footer">
+              <p>© 2025 <span class="brand-name">Blotter Management System</span></p>
+              <p>All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    attachments: attachments
+  };
+
+  try {
+    await sgMail.send(msg);
+    console.log(`✅ Officer credentials email sent to ${to}`);
+  } catch (error) {
+    console.error('❌ SendGrid error:', error);
+    throw new Error('Failed to send officer credentials email');
+  }
+}
+

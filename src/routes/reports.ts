@@ -224,4 +224,99 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
       success: true,
       data: reports,
     };
-  });
+  })
+
+  // ✅ Get on-duty officers (for assign dialog)
+  .get("/on-duty-officers", async () => {
+    const { officers } = await import("../db/schema");
+
+    const onDutyOfficers = await db.query.officers.findMany({
+      where: (officers, { eq, and }) =>
+        and(
+          eq(officers.isActive, true),
+          eq(officers.onDuty, true)
+        ),
+    });
+
+    console.log(`👮 Found ${onDutyOfficers.length} on-duty officers`);
+
+    return {
+      success: true,
+      data: onDutyOfficers,
+    };
+  })
+
+  // ✅ Assign officers to case (max 2)
+  .patch(
+    "/:id/assign-officers",
+    async ({ params, body, set }) => {
+      const reportId = parseInt(params.id);
+      const { officerIds } = body;
+
+      // Validate max 2 officers
+      if (officerIds.length > 2) {
+        set.status = 400;
+        return {
+          success: false,
+          message: "Maximum 2 officers can be assigned to a case",
+        };
+      }
+
+      // Convert to comma-separated string
+      const assignedOfficerIds = officerIds.join(",");
+
+      // Update report
+      const [updatedReport] = await db
+        .update(blotterReports)
+        .set({
+          assignedOfficerIds,
+          status: "Assigned", // Update status
+          updatedAt: new Date()
+        })
+        .where(eq(blotterReports.id, reportId))
+        .returning();
+
+      if (!updatedReport) {
+        set.status = 404;
+        return { success: false, message: "Report not found" };
+      }
+
+      // Send notifications to assigned officers
+      try {
+        for (const officerId of officerIds) {
+          await FCM.notifyOfficerCaseAssigned(
+            db,
+            officerId,
+            updatedReport.caseNumber,
+            updatedReport.id,
+            updatedReport.incidentType
+          );
+        }
+
+        // Notify complainant about officer assignment
+        if (updatedReport.filedById) {
+          await FCM.notifyUserOfficerAssigned(
+            db,
+            updatedReport.filedById,
+            updatedReport.caseNumber,
+            `${officerIds.length} officer(s)`,
+            "N/A"
+          );
+        }
+      } catch (error) {
+        console.error("Failed to send notification:", error);
+      }
+
+      console.log(`✅ Assigned ${officerIds.length} officer(s) to case ${updatedReport.caseNumber}`);
+
+      return {
+        success: true,
+        data: updatedReport,
+      };
+    },
+    {
+      body: t.Object({
+        officerIds: t.Array(t.Number()),
+      }),
+    }
+  );
