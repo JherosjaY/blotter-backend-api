@@ -8,7 +8,7 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
   // Get all reports
   .get("/", async () => {
     const reports = await db.query.blotterReports.findMany({
-      orderBy: desc(blotterReports.createdAt),
+      orderBy: desc(blotterReports.dateFiled), // ✅ Changed from createdAt
     });
 
     return {
@@ -202,7 +202,7 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
 
     const userReports = await db.query.blotterReports.findMany({
       where: eq(blotterReports.userId, userId),
-      orderBy: desc(blotterReports.createdAt),
+      orderBy: desc(blotterReports.dateFiled), // ✅ Changed from createdAt
     });
 
     console.log(`📋 Fetched ${userReports.length} reports for user ${userId}`);
@@ -217,7 +217,7 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
   .get("/status/:status", async ({ params }) => {
     const reports = await db.query.blotterReports.findMany({
       where: eq(blotterReports.status, params.status),
-      orderBy: desc(blotterReports.createdAt),
+      orderBy: desc(blotterReports.dateFiled), // ✅ Changed from createdAt
     });
 
     return {
@@ -231,91 +231,88 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
     const { officers } = await import("../db/schema");
 
     const onDutyOfficers = await db.query.officers.findMany({
-      and(
-        eq(officers.isActive, true)
-      // ❌ Removed onDuty check - field doesn't exist in Supabase
-    ),
-  });
+      where: (officers, { eq }) => eq(officers.isActive, true), // ✅ Only check isActive
+    });
 
-console.log(`👮 Found ${onDutyOfficers.length} on-duty officers`);
+    console.log(`👮 Found ${onDutyOfficers.length} on-duty officers`);
 
-return {
-  success: true,
-  data: onDutyOfficers,
-};
+    return {
+      success: true,
+      data: onDutyOfficers,
+    };
   })
 
   // ✅ Assign officers to case (max 2)
   .patch(
-  "/:id/assign-officers",
-  async ({ params, body, set }) => {
-    const reportId = parseInt(params.id);
-    const { officerIds } = body;
+    "/:id/assign-officers",
+    async ({ params, body, set }) => {
+      const reportId = parseInt(params.id);
+      const { officerIds } = body;
 
-    // Validate max 2 officers
-    if (officerIds.length > 2) {
-      set.status = 400;
+      // Validate max 2 officers
+      if (officerIds.length > 2) {
+        set.status = 400;
+        return {
+          success: false,
+          message: "Maximum 2 officers can be assigned to a case",
+        };
+      }
+
+      // Convert to comma-separated string
+      const assignedOfficerIds = officerIds.join(",");
+
+      // Update report
+      const [updatedReport] = await db
+        .update(blotterReports)
+        .set({
+          assignedOfficerIds,
+          status: "Assigned", // Update status
+          updatedAt: new Date()
+        })
+        .where(eq(blotterReports.id, reportId))
+        .returning();
+
+      if (!updatedReport) {
+        set.status = 404;
+        return { success: false, message: "Report not found" };
+      }
+
+      // Send notifications to assigned officers
+      try {
+        for (const officerId of officerIds) {
+          await FCM.notifyOfficerCaseAssigned(
+            db,
+            officerId,
+            updatedReport.caseNumber,
+            updatedReport.id,
+            updatedReport.incidentType
+          );
+        }
+
+        // Notify complainant about officer assignment
+        if (updatedReport.userId) {
+          await FCM.notifyUserOfficerAssigned(
+            db,
+            updatedReport.userId,
+            updatedReport.caseNumber,
+            `${officerIds.length} officer(s)`,
+            "N/A"
+          );
+        }
+      } catch (error) {
+        console.error("Failed to send notification:", error);
+      }
+
+      console.log(`✅ Assigned ${officerIds.length} officer(s) to case ${updatedReport.caseNumber}`);
+
       return {
-        success: false,
-        message: "Maximum 2 officers can be assigned to a case",
+        success: true,
+        data: updatedReport,
       };
+    },
+    {
+      body: t.Object({
+        officerIds: t.Array(t.Number()),
+      }),
     }
-
-    // Convert to comma-separated string
-    const assignedOfficerIds = officerIds.join(",");
-
-    // Update report
-    const [updatedReport] = await db
-      .update(blotterReports)
-      .set({
-        assignedOfficerIds,
-        status: "Assigned", // Update status
-        updatedAt: new Date()
-      })
-      .where(eq(blotterReports.id, reportId))
-      .returning();
-
-    if (!updatedReport) {
-      set.status = 404;
-      return { success: false, message: "Report not found" };
-    }
-
-    // Send notifications to assigned officers
-    try {
-      for (const officerId of officerIds) {
-        await FCM.notifyOfficerCaseAssigned(
-          db,
-          officerId,
-          updatedReport.caseNumber,
-          updatedReport.id,
-          updatedReport.incidentType
-        );
-      }
-
-      // Notify complainant about officer assignment
-      if (updatedReport.userId) {
-        await FCM.notifyUserOfficerAssigned(
-          db,
-          updatedReport.userId,
-          updatedReport.caseNumber,
-          `${officerIds.length} officer(s)`,
-          "N/A"
-        );
-      }
-    } catch (error) {
-      console.error("Failed to send notification:", error);
-    }
-
-    console.log(`✅ Assigned ${officerIds.length} officer(s) to case ${updatedReport.caseNumber}`);
-
-    return {
-      success: true,
-      data: updatedReport,
-    };
-  },
-  {
-    body: t.Object({
-      officerIds: t.Array(t.Number()),
-    }),
-  }
-);
+  );
