@@ -315,4 +315,50 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
         officerIds: t.Array(t.Number()),
       }),
     }
-  );
+  )
+
+  // Get reports by user ID
+  .get("/user/:userId", async ({ params, set }) => {
+    const userId = parseInt(params.userId);
+
+    if (isNaN(userId)) {
+      set.status = 400;
+      return { success: false, message: "Invalid user ID" };
+    }
+
+    const reports = await db.query.blotterReports.findMany({
+      where: eq(blotterReports.userId, userId),
+      orderBy: desc(blotterReports.dateFiled),
+    });
+
+    return {
+      success: true,
+      data: reports,
+    };
+  })
+
+  // Get report statistics by user ID
+  .get("/stats/:userId", async ({ params, set }) => {
+    const userId = parseInt(params.userId);
+
+    if (isNaN(userId)) {
+      set.status = 400;
+      return { success: false, message: "Invalid user ID" };
+    }
+
+    const allReports = await db.query.blotterReports.findMany({
+      where: eq(blotterReports.userId, userId),
+    });
+
+    const stats = {
+      total: allReports.length,
+      pending: allReports.filter(r => r.status === "Pending").length,
+      ongoing: allReports.filter(r => r.status === "Ongoing" || r.status === "Under Investigation").length,
+      resolved: allReports.filter(r => r.status === "Resolved" || r.status === "Closed").length,
+    };
+
+    return {
+      success: true,
+      data: stats,
+    };
+  });
