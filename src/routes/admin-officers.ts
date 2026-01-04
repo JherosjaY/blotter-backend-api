@@ -307,4 +307,57 @@ export const adminOfficerRoutes = new Elysia({ prefix: "/admin/officers" })
                     error instanceof Error ? error.message : "Unknown error",
             };
         }
-    });
+    })
+
+    // NEW: Send officer credentials email manually (called from Android app)
+    .post(
+        "/:id/send-credentials-email",
+        async ({ params, body, set }) => {
+            const officerId = parseInt(params.id);
+            const { email, fullName, username, password, rank, badgeNumber } = body;
+
+            try {
+                console.log(`📧 Manually sending credentials email for officer ID: ${officerId}`);
+                console.log(`  Email: ${email}`);
+                console.log(`  Name: ${fullName}`);
+
+                // Send email via SendGrid
+                await sendOfficerCredentialsEmail(
+                    email,
+                    fullName,
+                    username,
+                    password,
+                    rank,
+                    badgeNumber
+                );
+
+                console.log(`✅ Credentials email sent successfully to ${email}`);
+
+                return {
+                    success: true,
+                    message: "Credentials email sent successfully",
+                };
+            } catch (error) {
+                console.error(`❌ Error sending credentials email:`, error);
+                set.status = 500;
+                return {
+                    success: false,
+                    message: "Failed to send credentials email",
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : "Unknown error",
+                };
+            }
+        },
+        {
+            body: t.Object({
+                email: t.String(),
+                fullName: t.String(),
+                username: t.String(),
+                password: t.String(),
+                rank: t.String(),
+                badgeNumber: t.String(),
+            }),
+        }
+    );
