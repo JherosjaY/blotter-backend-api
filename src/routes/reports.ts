@@ -331,9 +331,17 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
       orderBy: desc(blotterReports.dateFiled),
     });
 
+    // ✅ Transform date strings to timestamps for Android compatibility
+    const transformedReports = reports.map(report => ({
+      ...report,
+      // Convert "Jan 04, 2026" to timestamp (milliseconds)
+      incidentDate: report.incidentDate ? new Date(report.incidentDate).getTime() : null,
+      // Keep dateFiled as-is (already a timestamp)
+    }));
+
     return {
       success: true,
-      data: reports,
+      data: transformedReports,
     };
   })
 
