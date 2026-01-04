@@ -5,6 +5,114 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export const officerRoutes = new Elysia({ prefix: "/officers" })
+    // Officer Login
+    .post(
+        "/login",
+        async ({ body, set }) => {
+            const { username, password } = body;
+
+            try {
+                console.log(`🔐 Officer login attempt: ${username}`);
+
+                // Find officer auth by username
+                const auth = await db.query.officerAuth.findFirst({
+                    where: eq(officerAuth.username, username),
+                });
+
+                if (!auth) {
+                    console.log(`❌ Officer auth not found for username: ${username}`);
+                    set.status = 401;
+                    return {
+                        success: false,
+                        message: "Invalid credentials",
+                    };
+                }
+
+                // Verify password
+                const isValid = await bcrypt.compare(password, auth.password);
+
+                if (!isValid) {
+                    console.log(`❌ Invalid password for officer: ${username}`);
+                    set.status = 401;
+                    return {
+                        success: false,
+                        message: "Invalid credentials",
+                    };
+                }
+
+                // Check if account is active
+                if (!auth.isActive) {
+                    console.log(`❌ Officer account is inactive: ${username}`);
+                    set.status = 403;
+                    return {
+                        success: false,
+                        message: "Account is inactive. Please contact admin.",
+                    };
+                }
+
+                // Get officer details
+                const officer = await db.query.officers.findFirst({
+                    where: eq(officers.id, auth.officerId),
+                });
+
+                if (!officer) {
+                    console.log(`❌ Officer not found for ID: ${auth.officerId}`);
+                    set.status = 404;
+                    return {
+                        success: false,
+                        message: "Officer details not found",
+                    };
+                }
+
+                console.log(`✅ Officer login successful: ${officer.name}`);
+
+                // Generate token
+                const token = Buffer.from(
+                    `${officer.id}:${auth.username}:${Date.now()}`
+                ).toString("base64");
+
+                return {
+                    success: true,
+                    message: "Login successful",
+                    data: {
+                        officer: {
+                            id: officer.id,
+                            name: officer.name,
+                            rank: officer.rank,
+                            badgeNumber: officer.badgeNumber,
+                            pnpNumber: officer.pnpNumber,
+                            contactNumber: officer.contactNumber,
+                            email: officer.email,
+                            gender: officer.gender,
+                            userId: officer.userId,
+                            isActive: officer.isActive,
+                        },
+                        auth: {
+                            username: auth.username,
+                            mustChangePassword: auth.mustChangePassword,
+                        },
+                        role: "officer", // ✅ Return role for Android to detect
+                        token: token,
+                    },
+                };
+            } catch (error: any) {
+                console.error("❌ Officer login error:", error);
+                set.status = 500;
+                return {
+                    success: false,
+                    message: "Login failed. Please try again.",
+                    error: error.message,
+                };
+            }
+        },
+        {
+            body: t.Object({
+                username: t.String(),
+                password: t.String(),
+            }),
+        }
+    )
+
     // Change password (for force password change on first login)
     .patch(
         "/change-password",
