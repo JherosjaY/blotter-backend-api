@@ -421,7 +421,7 @@ export async function sendPasswordResetEmail(
           <div class="email-container">
             <div class="header">
               <!-- Logo removed due to SendGrid error -->
-              <h1 class="app-title">Blotter Management System</h1>
+              <h1 class="app-title">🛡️ BLOTTER MANAGEMENT SYSTEM</h1>
             </div>
             <div class="content-card">
               <p class="greeting">Hello${username ? ` <strong>${username}</strong>` : ''}! 👋</p>
@@ -590,7 +590,7 @@ export async function sendOfficerCredentialsEmail(
           <div class="email-container">
             <div class="header">
               <!-- Logo removed due to SendGrid error -->
-              <h1 class="app-title">Blotter Management System</h1>
+              <h1 class="app-title">🛡️ BLOTTER MANAGEMENT SYSTEM</h1>
             </div>
             <div class="content-card">
               <p class="greeting">Welcome, <strong>${officerName}</strong>! 👮</p>
