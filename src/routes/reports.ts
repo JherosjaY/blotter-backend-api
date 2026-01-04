@@ -245,10 +245,10 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
     const { officers } = await import("../db/schema");
 
     const onDutyOfficers = await db.query.officers.findMany({
-      where: (officers, { eq }) => eq(officers.isActive, true), // ✅ Only check isActive
+      where: (officers, { eq }) => eq(officers.isActive, true), // ✅ Only check isActive (onDuty field not in DB yet)
     });
 
-    console.log(`👮 Found ${onDutyOfficers.length} on-duty officers`);
+    console.log(`👮 Found ${onDutyOfficers.length} active officers`);
 
     return {
       success: true,
@@ -275,11 +275,22 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
       // Convert to comma-separated string
       const assignedOfficerIds = officerIds.join(",");
 
+      // ✅ Fetch officer names for assignedOfficer field
+      const { officers } = await import("../db/schema");
+      const officerRecords = await db.query.officers.findMany({
+        where: (officers, { inArray }) => inArray(officers.id, officerIds),
+      });
+
+      const officerNames = officerRecords.map(o => o.name).join(", ");
+
+      console.log(`📝 Assigning officers: ${officerNames} (IDs: ${assignedOfficerIds})`);
+
       // Update report
       const [updatedReport] = await db
         .update(blotterReports)
         .set({
           assignedOfficerIds,
+          assignedOfficer: officerNames, // ✅ Set officer names for timeline
           status: "Assigned", // Update status
           updatedAt: new Date()
         })
@@ -351,6 +362,52 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
       // Convert "Jan 04, 2026" to timestamp (milliseconds)
       incidentDate: report.incidentDate ? new Date(report.incidentDate).getTime() : null,
       // Keep dateFiled as-is (already a timestamp)
+    }));
+
+    return {
+      success: true,
+      data: transformedReports,
+    };
+  })
+
+  // Get reports assigned to specific officer
+  .get("/officer/:officerId", async ({ params, set }) => {
+    const officerId = parseInt(params.officerId);
+
+    if (isNaN(officerId)) {
+      set.status = 400;
+      return { success: false, message: "Invalid officer ID" };
+    }
+
+    console.log(`📋 Fetching reports for officer ID: ${officerId}`);
+
+    // Get all reports and filter by assignedOfficerIds
+    const allReports = await db.query.blotterReports.findMany({
+      orderBy: desc(blotterReports.dateFiled),
+    });
+
+    // Filter reports where this officer is assigned
+    const officerReports = allReports.filter(report => {
+      if (!report.assignedOfficerIds) return false;
+
+      try {
+        // assignedOfficerIds is a comma-separated string like "1,2"
+        const officerIds = report.assignedOfficerIds
+          .split(',')
+          .map(id => parseInt(id.trim()));
+
+        return officerIds.includes(officerId);
+      } catch {
+        return false;
+      }
+    });
+
+    console.log(`✅ Found ${officerReports.length} reports for officer ${officerId}`);
+
+    // Transform date strings to timestamps for Android compatibility
+    const transformedReports = officerReports.map(report => ({
+      ...report,
+      incidentDate: report.incidentDate ? new Date(report.incidentDate).getTime() : null,
     }));
 
     return {
