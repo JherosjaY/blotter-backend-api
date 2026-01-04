@@ -28,9 +28,15 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
       return { success: false, message: "Report not found" };
     }
 
+    // ✅ Transform date string to timestamp for Android compatibility
+    const transformedReport = {
+      ...report,
+      incidentDate: report.incidentDate ? new Date(report.incidentDate).getTime() : null,
+    };
+
     return {
       success: true,
-      data: report,
+      data: transformedReport,
     };
   })
 
