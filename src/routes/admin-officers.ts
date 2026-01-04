@@ -122,7 +122,9 @@ export const adminOfficerRoutes = new Elysia({ prefix: "/admin/officers" })
 
                 console.log(`✅ Officer auth created! AuthID: ${newAuth.id}`);
 
-                // STEP 6: Send credentials email (don't fail if email fails)
+                // STEP 6: Send credentials email - DISABLED (manual send from Android app)
+                // The Android app will handle email sending via device email client
+                /*
                 try {
                     await sendOfficerCredentialsEmail(
                         email,
@@ -137,6 +139,8 @@ export const adminOfficerRoutes = new Elysia({ prefix: "/admin/officers" })
                     console.error(`⚠️ Failed to send email, but officer was created:`, emailError);
                     // Don't fail the request if email fails
                 }
+                */
+                console.log(`ℹ️ Email sending disabled - Android app will handle manual send`);
 
                 // STEP 7: Return officer data + credentials
                 return {
