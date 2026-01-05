@@ -48,6 +48,45 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
     };
   })
 
+  // ✅ Update case status (for Start Investigation button)
+  .patch(
+    "/:id/status",
+    async ({ params, body, set }) => {
+      const reportId = parseInt(params.id);
+
+      const [updatedReport] = await db
+        .update(blotterReports)
+        .set({ status: body.status })
+        .where(eq(blotterReports.id, reportId))
+        .returning();
+
+      if (!updatedReport) {
+        set.status = 404;
+        return { success: false, message: "Report not found" };
+      }
+
+      console.log(`✅ Case ${updatedReport.caseNumber} status updated to: ${body.status}`);
+
+      // ✅ Transform date for Android compatibility
+      const transformedReport = {
+        ...updatedReport,
+        incidentDate: updatedReport.incidentDate
+          ? new Date(updatedReport.incidentDate).getTime()
+          : null,
+      };
+
+      return {
+        success: true,
+        data: transformedReport,
+      };
+    },
+    {
+      body: t.Object({
+        status: t.String(),
+      }),
+    }
+  )
+
   // Create report
   .post(
     "/",
