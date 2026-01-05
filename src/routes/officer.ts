@@ -282,26 +282,33 @@ export const officerRoutes = new Elysia({ prefix: "/officers" })
             // Filter cases where this officer is assigned
             const assignedCases = allCases.filter((report) => {
                 try {
-                    const officerIds = report.assignedOfficerIds
-                        ? JSON.parse(report.assignedOfficerIds as string)
-                        : [];
-                    return Array.isArray(officerIds) && officerIds.includes(officerId);
+                    // ✅ Handle comma-separated string format (e.g., "11,12")
+                    if (!report.assignedOfficerIds) return false;
+
+                    const officerIdsStr = String(report.assignedOfficerIds);
+                    const officerIds = officerIdsStr.split(',').map(id => parseInt(id.trim()));
+
+                    return officerIds.includes(officerId);
                 } catch {
                     return false;
                 }
             });
 
+            console.log(`📊 Officer ${officerId} stats - Total assigned: ${assignedCases.length}`);
+
             // Count by status
             const totalAssigned = assignedCases.length;
             const assigned = assignedCases.filter(
-                (c) => c.status === "Pending" || c.status === "Under Investigation"
+                (c) => c.status === "Assigned" || c.status === "Pending"
             ).length;
             const active = assignedCases.filter(
-                (c) => c.status === "Active" || c.status === "In Progress"
+                (c) => c.status === "Ongoing" || c.status === "In Progress"
             ).length;
             const resolved = assignedCases.filter(
                 (c) => c.status === "Resolved" || c.status === "Closed"
             ).length;
+
+            console.log(`  Assigned: ${assigned}, Active: ${active}, Resolved: ${resolved}`);
 
             return {
                 success: true,
