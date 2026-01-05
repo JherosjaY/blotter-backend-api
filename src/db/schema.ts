@@ -114,7 +114,7 @@ export const officers = pgTable("officers", {
   idType: varchar("id_type", { length: 50 }), // ✅ Type of ID uploaded
   userId: integer("user_id"), // ✅ Keep for backward compatibility (optional)
   isActive: boolean("is_active").default(true),
-  // ❌ Removed 'onDuty' field - not in Supabase
+  onDuty: boolean("on_duty").default(true), // ✅ Track officer duty status
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(), // ✅ Track updates
 });

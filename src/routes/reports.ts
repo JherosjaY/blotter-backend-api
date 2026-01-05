@@ -245,10 +245,13 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
     const { officers } = await import("../db/schema");
 
     const onDutyOfficers = await db.query.officers.findMany({
-      where: (officers, { eq }) => eq(officers.isActive, true), // ✅ Only check isActive (onDuty field not in DB yet)
+      where: (officers, { eq, and }) => and(
+        eq(officers.isActive, true),
+        eq(officers.onDuty, true) // ✅ Now filtering by onDuty field
+      ),
     });
 
-    console.log(`👮 Found ${onDutyOfficers.length} active officers`);
+    console.log(`👮 Found ${onDutyOfficers.length} on-duty officers`);
 
     return {
       success: true,
