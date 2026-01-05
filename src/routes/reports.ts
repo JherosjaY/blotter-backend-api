@@ -333,9 +333,17 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
 
       console.log(`✅ Assigned ${officerIds.length} officer(s) to case ${updatedReport.caseNumber}`);
 
+      // ✅ Convert incidentDate from string to timestamp for Android compatibility
+      const responseData = {
+        ...updatedReport,
+        incidentDate: updatedReport.incidentDate
+          ? new Date(updatedReport.incidentDate).getTime()
+          : null
+      };
+
       return {
         success: true,
-        data: updatedReport,
+        data: responseData,
       };
     },
     {
