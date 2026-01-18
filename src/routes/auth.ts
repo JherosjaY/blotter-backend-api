@@ -4,6 +4,7 @@ import { users, verificationCodes } from "../db/schema";
 import { eq, and, gt, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/sendgrid";
+import { verifyCaptcha } from "../lib/captcha";
 
 // Helper function to generate 6-digit code
 function generateVerificationCode(): string {
@@ -15,7 +16,17 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
   .post(
     "/register",
     async ({ body, set }) => {
-      const { username, email, password } = body;
+      const { username, email, password, captchaToken } = body;
+
+      // Verify CAPTCHA first
+      const captchaResult = await verifyCaptcha(captchaToken);
+      if (!captchaResult.success) {
+        set.status = 400;
+        return {
+          success: false,
+          message: captchaResult.message || "CAPTCHA verification failed. Please try again.",
+        };
+      }
 
       // Check if username exists
       const existingUsername = await db.query.users.findFirst({
@@ -95,6 +106,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
         username: t.String(),
         email: t.String(),
         password: t.String(),
+        captchaToken: t.String(),
       }),
     }
   )
@@ -267,7 +279,17 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
   .post(
     "/login",
     async ({ body, set }) => {
-      const { username, password } = body;
+      const { username, password, captchaToken } = body;
+
+      // Verify CAPTCHA first
+      const captchaResult = await verifyCaptcha(captchaToken);
+      if (!captchaResult.success) {
+        set.status = 400;
+        return {
+          success: false,
+          message: captchaResult.message || "CAPTCHA verification failed. Please try again.",
+        };
+      }
 
       const user = await db.query.users.findFirst({
         where: eq(users.username, username),
@@ -322,6 +344,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       body: t.Object({
         username: t.String(),
         password: t.String(),
+        captchaToken: t.String(),
       }),
     }
   )
