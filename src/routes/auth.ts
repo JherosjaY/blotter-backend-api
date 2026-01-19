@@ -118,13 +118,13 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       const { email, code } = body;
       console.log(`🔍 Verify-email request: email=${email}, code=${code}`);
 
-      // Find valid verification code (not expired)
+      // Find valid verification code (not expired and not yet used)
       const verification = await db.query.verificationCodes.findFirst({
         where: and(
           eq(verificationCodes.email, email),
           eq(verificationCodes.code, code),
-          gt(verificationCodes.expiresAt, new Date())
-          // ⚠️ Temporarily removed isNull check - will add back after testing
+          gt(verificationCodes.expiresAt, new Date()),
+          isNull(verificationCodes.verifiedAt) // Only unused codes
         ),
       });
 
